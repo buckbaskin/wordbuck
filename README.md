@@ -2,7 +2,7 @@
 An interpreter for a Javaish language
 
 ## About the project
-I am creating an interpreter written in the Scheme programming language. It is inspired by an interpreter for a Java like language that I did in class at one point, but the language is going to be different. I'm calling it Javaish for now, mostly because it is going to be object oriented, but I plan to change it a lot.
+I am creating an interpreter written in the Scheme programming language. It is inspired by an interpreter for a Java like language that I did a few months ago, but the language is going to be different. I'm calling it Javaish for now, mostly because it is going to be object oriented, but I plan to change it a lot.
 
 ## The `wordbuck` language
 The `wordbuck` language is an mashup of a lot of language concepts that I've come across in the past year or so. I've used Java quite a lot in my life, so when I think of an object-oriented language, that is usually where I start, but I want to do things differently, mostly just to see how things turn out.
