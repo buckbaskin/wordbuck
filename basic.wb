@@ -1,0 +1,5 @@
+a = b
+a = #f
+b = 10
+c = has comment after this # comment
+d = line after comment
