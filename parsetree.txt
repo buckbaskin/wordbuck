@@ -1,0 +1,37 @@
+PARSE TREE
+
+code aka statement-list
+ |- EOF
+ |- <statement> \n <code>
+
+
+statement
+ |- expression (returns a value)
+     |- function call
+         |- static function call
+         |- function call
+ |- return
+     |- return <expression>
+ |- function def
+     |- static function def
+     |- function def
+ |- void function call
+     |- static void function call
+     |- void function call
+ |- variable declaration
+     |- static declare
+     |- objective declare
+ |- variable assignment
+ |- variable declaration-assignment
+     |- static declare-assign
+     |- objective declare-assign
+ |- if
+     |- if/then
+         |- if <conditional> \n <statement> \n end
+     |- if/then/else
+         |- if <conditional> \n <statement> \n <statement>
+ |- block
+     |- blk \n <code>
+ |- while
+ |- for
+ |- 
