@@ -1,0 +1,44 @@
+Notes: raw syntax => parse tree (as nested list)
+
+VARIABLE DECLARATIONS
+variable => (var variable)
+type variable => (var variable type)
+variable = value => (var variable value)
+type variable = value => (var variable value type)
+
+VARIABLE assignment
+variable = exprssion => (= variable expression)
+
+RETURN statement
+return expression => (return expression)
+
+IF statement
+if conditional blk
+  then-statement
+  optional-else-statement
+end
+=> (if (conditional) then‐statement optional‐else‐statement)
+
+BLOCK
+blk
+end
+
+IMPLIED BLOCK
+examples with if:
+VALID
+  if conditional
+    then-statement
+    optional-else-statement
+  end
+VALID
+  if conditional blk
+    then-statement
+    else-statement
+VALID
+  if conditional
+    then-statement
+    else-statement
+INVALID: will treat other code as if statement. except at EOF
+  if conditional
+    then-statement
+  other code

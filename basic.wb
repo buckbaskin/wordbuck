@@ -1,5 +1,9 @@
-a = b
-a = #f
-b = 10
-c = has comment after this # comment
-d = line after comment
+#| if statement potential options |#
+
+if True
+  return 1
+  return 0
+
+if True
+  return 1
+  end
