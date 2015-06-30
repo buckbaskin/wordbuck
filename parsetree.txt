@@ -9,29 +9,53 @@ statement
  |- expression (returns a value)
      |- function call
          |- static function call
+             |- <func_id>([<arg>]) # [<arg>] => list of args. # ex. f(a, b)
          |- function call
+             |- <object>.<funct_id>([<arg>])
+
  |- return
      |- return <expression>
- |- function def
-     |- static function def
-     |- function def
+
  |- void function call
-     |- static void function call
-     |- void function call
- |- variable declaration
+     |- static function call
+         |- <func_id>([<arg>]) # [<arg>] => list of args
+     |- function call
+         |- <object>.<funct_id>([<arg>])
+
+ |- variable/object declaration
      |- static declare
+         |- <variable> = <expression>
      |- objective declare
+         |- <object>.<variable> = <expression>
+     |- typed static declare # note, void is a typed function call, recommend functions declare a type
+         |- <type> <variable> = <expression> # ex. int a = 10
+     |- typed objective declare
+         |- <type> <object>.<variable> = <expression> # ex. obj.a = 10
+
+|- function def # technically part of variable declaration
+     |- static function def
+         |- <func_id/variable> = func([<arg>]) \n <statement>
+     |- function def
+         |- <object>.<func_id/variable> = func([<arg>]) \n <statement>
+
+ 
  |- variable assignment
+ 
  |- variable declaration-assignment
      |- static declare-assign
      |- objective declare-assign
+ 
  |- if
      |- if/then
          |- if <conditional> \n <statement> \n end
      |- if/then/else
          |- if <conditional> \n <statement> \n <statement>
+ 
  |- block
      |- blk \n <code>
+ 
  |- while
+ 
  |- for
+ 
  |- 
