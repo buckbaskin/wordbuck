@@ -4,7 +4,6 @@ code aka statement-list
  |- EOF
  |- <statement> \n <code>
 
-
 statement
  |- expression (returns a value)
      |- function call
@@ -12,6 +11,25 @@ statement
              |- <func_id>([<arg>]) # [<arg>] => list of args. # ex. f(a, b)
          |- function call
              |- <object>.<funct_id>([<arg>])
+     |- conditional (returns a boolean)
+         |- or
+         |- and
+         |- !
+         |- ==
+         |- >=
+         |- >
+         |- <=
+         |- <
+         |- !=
+         |- True
+         |- False
+     |- mathal (returns an int)
+         |- +
+         |- - (binary and unary)
+         |- *
+         |- \
+         |- %
+         |- <int>
 
  |- return
      |- return <expression>
@@ -32,14 +50,19 @@ statement
      |- typed objective declare
          |- <type> <object>.<variable> = <expression> # ex. obj.a = 10
 
-|- function def # technically part of variable declaration
+ |- function def # technically part of variable declaration
      |- static function def
          |- <func_id/variable> = func([<arg>]) \n <statement>
      |- function def
          |- <object>.<func_id/variable> = func([<arg>]) \n <statement>
 
+ |- class def
+     |- <class_id> = class( parent, [<arg>]) \n <statement>
+
  
  |- variable assignment
+     |- static variable assignment
+         |- <variable> = 
  
  |- variable declaration-assignment
      |- static declare-assign
@@ -52,10 +75,27 @@ statement
          |- if <conditional> \n <statement> \n <statement>
  
  |- block
-     |- blk \n <code>
+     |- blk \n <code> \n end
+
+ |- break
+
+ |- continue
  
  |- while
+     |- while <condidtional> \n <statement>
  
  |- for
- 
+     |- for <conditional> \n <initial statement> \n <loop statement> \n <end of loop statement>
+
+ |- try
+     |- try catch
+         |- try \n <statement> \n catch <error> \n <statement>
+     |- try catch finally
+         |- try \n <statement> \n catch <error> \n <statement> \n finally <statement>
+     |- try finally
+         |- try \n <statement> \n finally \n <statement>
+
+ |- throw
+     |- throw <error>
+
  |- 
