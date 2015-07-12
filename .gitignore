@@ -20,6 +20,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# My Ignores
+parser_level1/
+
 # =========================
 # Operating System Files
 # =========================
