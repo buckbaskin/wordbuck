@@ -1,4 +1,4 @@
-(load "parser.wb.scm")
+(load "parser_level1/simpleParser.scm")
 
 ; INTERPRETER
 ; Interpreter takes in a parsed file, and evaluates the
