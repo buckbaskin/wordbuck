@@ -197,8 +197,10 @@
   (lambda (arg)
     (cond
       ((null? arg) #f)
-      ((integer? arg) #f)
-      (else #t))))
+      ((> (length arg) 3) #f)
+      ((< (length arg) 2) #f)
+      ((op? '- 2 arg) #t)
+      (else (foldl (lambda (a b) (or a (eval b))) #f (map (lambda (operator) (op? operator 2 arg)) '(- + / % *)))))))
 
 (define M_v_math
   (lambda (arg state return)
@@ -208,6 +210,14 @@
       ((eq? '3 (length arg)) (op_2 (eval (car arg)) (cadr arg) (caddr arg) state return))
       ((eq? '2 (length arg)) (op_1 (eval (car arg)) (cadr arg) state return))
       (else (display arg) (error "M_v_math: this operator not yet implemented")))))
+
+(define is_bool?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((> (length arg) 3) #f)
+      ((< (length arg) 2) #f)
+      (else (foldl (lambda (a b) (or a (eval b))) #f (map (lambda (operator) (op? operator 2 arg)) '(&& || !)))))))
 
 ; === M value utlities ===
 
