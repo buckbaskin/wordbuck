@@ -28,9 +28,29 @@
 
 (define process_arg_list
   (lambda (l state)
-    (error "process_arg_list not yet implemented")))
+    (cond
+      ((null? l) (error "Null input to interpreter."))
+      (else (M_state (car l) (cdr l) state (lambda (v) v))))))
+
+
+; ====== START INTERPRETER BODY ======
+
+; ====== UTILTIES ======
 
 (define new_state
   (lambda ()
     ; ((vars) (vals))
     '(() ())))
+
+; ====== M Func ======
+; return the state, value of the function execution
+
+; ====== M State ======
+; returns the state modified by the given code
+; This is for use within functions, etc
+
+; ====== M Value ======
+; evaluate 
+
+; ====== M boolean ======
+; evaluate conditional (while, for, if that kind of thing)
