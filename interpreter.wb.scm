@@ -96,7 +96,13 @@
       ((null? arg) (error "M_state: argument is null"))
       ((not (is_valid_state? state)) (error "M_state: invalid state"))
       ((is_return? arg) (M_s_return arg arg_list state term return excep cont break))
-      (else (error "That part of M_s is not defined")))))
+      ((is_declare? arg) (M_s_declare arg arg_list state term return excep cont break))
+      (else (display "arg\n") 
+            (display arg) 
+            (display "\nstate\n") 
+            (display state) 
+            (display "\n") 
+            (error "That part of M_s is not defined")))))
 
 ; === M state pieces ===
 
@@ -110,6 +116,20 @@
 (define M_s_return
   (lambda (arg arg_list state term return excep cont break)
     (M_value (cadr arg) state (lambda (val state) (return val state)))))
+
+(define is_declare?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((> (length arg) 3) #f)
+      ((< (length arg) 2) #f)
+      (else (eq? 'var (car arg))))))
+
+(define M_s_declare
+  (lambda (arg arg_list state term return excep cont break)
+    (cond
+      ((eq? (length arg) 2) (M_state (car arg_list) (cdr arg_list) (create_obj (cadr arg) state) term return excep cont break))
+      (else (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) (caddr arg) (create_obj (cadr arg) state)) term return excep cont break)))))
 
 ; === M_state utils ===
       
