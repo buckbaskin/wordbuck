@@ -44,7 +44,7 @@
       ((null? l) (error "Null input to interpreter."))
       (else (M_state (car l) (cdr l) state 
                      (lambda (state) (error "code did not return")) 
-                     (lambda (val state) (pretify val)) 
+                     (lambda (val state) (display state) (pretify val)) 
                      (lambda (excep) (error "Code throws exception")) 
                      (lambda (cont) (error "Code attempts to continue outside of loop"))
                      (lambda (break) (error "Code attempts to break outside of loop")))))))
@@ -97,6 +97,7 @@
       ((not (is_valid_state? state)) (error "M_state: invalid state"))
       ((is_return? arg) (M_s_return arg arg_list state term return excep cont break))
       ((is_declare? arg) (M_s_declare arg arg_list state term return excep cont break))
+      ((is_assign? arg) (M_s_assign arg arg_list state term return excep cont break))
       (else (display "arg\n") 
             (display arg) 
             (display "\nstate\n") 
@@ -131,6 +132,17 @@
       ((eq? (length arg) 2) (M_state (car arg_list) (cdr arg_list) (create_obj (cadr arg) state) term return excep cont break))
       (else (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) (caddr arg) (create_obj (cadr arg) state)) term return excep cont break)))))
 
+(define is_assign?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      (else (eq? '= (car arg))))))
+
+(define M_s_assign
+  (lambda (arg arg_list state term return excep cont break)
+    (cond
+      (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) (caddr arg) state) term return excep cont break))))
+
 ; === M_state utils ===
       
 (define create_obj
@@ -152,6 +164,20 @@
       ((eq? name (car name_list)) (return name_list (cons obj (cdr obj_list))))
       (else (assign name obj (cdr name_list) (cdr obj_list) (lambda (names objs) (return (cons (car name_list) names) (cons (car obj_list) objs))))))))
 
+(define find_var
+  (lambda (name state)
+    (find name (car state) (cadr state) (lambda (val) val))))
+
+(define find
+  (lambda (name var_list val_list return)
+    (cond
+      ((or (null? var_list) (null? val_list)) (error "find_var: variable not yet declared"))
+      ((eq? name (car var_list))
+       (cond
+         ((eq? (car val_list) 'notDefined) (error "find_var: variable not initialized"))
+         (else (return (car val_list)))))
+      (else (find name (cdr var_list) (cdr val_list) return)))))
+
 
 
 ; ====== M Value ======
@@ -162,6 +188,7 @@
       ((null? arg) (error "M_value: null arg"))
       ((integer? arg) (return arg state))
       ((is_math? arg) (M_v_math arg state return))
+      ((symbol? arg) (return (find_obj (arg) state) state))
       (else (display arg) (error "M_value for this isn't implemented")))))
        
 ; === M value pieces ===
