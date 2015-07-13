@@ -12,33 +12,42 @@
 
 ; _ leading underscore denotes a function called by other scripts
 
-(define help
+(define _help
   (lambda ()
-    (begin
-      (display "This is the help text for the _wordbuck_ Interpreter")
-      #t)))
+    "help! Use (_i file_path [#t|#f]) to run"))
 
-(define interpret
+(define interpret_debug
   (lambda (parsed-file)
     (begin
       (display "parsed file \n")
       (display parsed-file)
       (display "\ninterpreter out:\n")
-      (process_arg_list parsed-file (new_state)))))
+      (interpret parsed-file))))
+
+(define interpret
+  (lambda (parsed-file)
+    (process_arg_list parsed-file (new_state))))
 
 (define _run-interpreter
   (lambda (raw-file)
     (interpret (parser raw-file))))
 
 (define _i
-  (lambda (file)
-    (_run-interpreter file)))
+  (lambda (file debug)
+    (cond
+      (debug (interpret_debug (parser file)))
+      (else (interpret (parser file))))))
 
 (define process_arg_list
   (lambda (l state)
     (cond
       ((null? l) (error "Null input to interpreter."))
-      (else (M_state (car l) (cdr l) state (lambda (v) v) (lambda (v) v))))))
+      (else (M_state (car l) (cdr l) state 
+                     (lambda (state) (error "code did not return")) 
+                     (lambda (val state) (pretify val)) 
+                     (lambda (excep) (error "Code throws exception")) 
+                     (lambda (cont) (error "Code attempts to continue outside of loop"))
+                     (lambda (break) (error "Code attempts to break outside of loop")))))))
 
 
 ; ====== START INTERPRETER BODY ======
@@ -57,6 +66,13 @@
       ((not (list? state)) #f)
       ((eq? (length state) '2) #t)
       (else #f))))
+
+(define pretify
+  (lambda (value)
+    (cond
+      ((eq? value #t) "Truth")
+      ((eq? value #f) "Naht Truth")
+      (else value))))
 
 ; ====== M Class ======
 ; return the state given a class definition
@@ -79,22 +95,23 @@
     (cond
       ((null? arg) (error "M_state: argument is null"))
       ((not (is_valid_state? state)) (error "M_state: invalid state"))
-      ((is_return? arg) (M_s_return arg arg_list state term return excep cont break)))
-      (else (error "That part of M_s is not defined"))))
+      ((is_return? arg) (M_s_return arg arg_list state term return excep cont break))
+      (else (error "That part of M_s is not defined")))))
 
-; M_state pieces
+; === M state pieces ===
 
 (define is_return?
   (lambda (arg)
-    ((null? arg) #f)
-    ((not (eq? (length arg) '2)) #f)
-    (else (eq? 'return (car arg)))))
+    (cond
+      ((null? arg) #f)
+      ((not (eq? (length arg) '2)) #f)
+      (else (eq? 'return (car arg))))))
 
 (define M_s_return
   (lambda (arg arg_list state term return excep cont break)
-    (
+    (M_value (cadr arg) state (lambda (val state) (return val state)))))
 
-; M_state utils
+; === M_state utils ===
       
 (define create_obj
   (lambda (name state)
@@ -119,6 +136,46 @@
 
 ; ====== M Value ======
 ; evaluate 
+(define M_value
+  (lambda (arg state return)
+    (cond
+      ((null? arg) (error "M_value: null arg"))
+      ((integer? arg) (return arg state))
+      ((is_math? arg) (M_v_math arg state return))
+      (else (display arg) (error "M_value for this isn't implemented")))))
+       
+; === M value pieces ===
+
+(define is_math?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((integer? arg) #f)
+      (else #t))))
+
+(define M_v_math
+  (lambda (arg state return)
+    (cond
+      ((op? '% '2 arg) (op_2 remainder (cadr arg) (caddr arg) state return))
+      ((op? '/ '2 arg) (op_2 quotient (cadr arg) (caddr arg) state return))
+      ((eq? '3 (length arg)) (op_2 (eval (car arg)) (cadr arg) (caddr arg) state return))
+      ((eq? '2 (length arg)) (op_1 (eval (car arg)) (cadr arg) state return))
+      (else (display arg) (error "M_v_math: this operator not yet implemented")))))
+
+; === M value utlities ===
+
+(define op?
+  (lambda (operator num_args input)
+    (cond
+      ((null? input) #f)
+      ((not (eq? (+ num_args 1) (length input))) #f)
+      (else (eq? operator (car input))))))
+
+(define op_2
+  (lambda (operation left_arg right_arg state0 return)
+    (M_value left_arg state0 (lambda (val_left state1) 
+                                                       (M_value right_arg state1 (lambda (val_right state2)
+                                                                                     (return (operation val_left val_right) state2)))))))
 
 ; ====== M boolean ======
 ; evaluate conditional (while, for, if that kind of thing)
