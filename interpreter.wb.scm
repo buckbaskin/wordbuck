@@ -30,7 +30,7 @@
   (lambda (l state)
     (cond
       ((null? l) (error "Null input to interpreter."))
-      (else (M_state (car l) (cdr l) state (lambda (v) v))))))
+      (else (M_state (car l) (cdr l) state (lambda (v) v) (lambda (v) v))))))
 
 
 ; ====== START INTERPRETER BODY ======
@@ -42,12 +42,25 @@
     ; ((vars) (vals))
     '(() ())))
 
+; ====== M Class ======
+; return the state given a class definition
+
 ; ====== M Func ======
 ; return the state, value of the function execution
 
 ; ====== M State ======
 ; returns the state modified by the given code
 ; This is for use within functions, etc
+; Continuations: 
+; term - called at the end of the evaluation if nothing else occurs (term state)
+; return - called if return is called (return value state)
+; excep - called if exception is thrown (excep value state)
+; cont - called in loop to return to top (cont state)
+; break - called in loop to exit loop (break state)
+
+(define M_state
+  (lambda (arg arg_list state term return excep cont break)
+    (error "M_state not yet implemented")))
 
 ; ====== M Value ======
 ; evaluate 
