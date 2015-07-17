@@ -2,13 +2,13 @@
 
 ; INTERPRETER
 ; Interpreter takes in a parsed file, and evaluates the
-;  main method. 
+;  main method.
 ; NOTE: intermediary steps before final version may execute
 ;  diferent portions of code than just a main method
 ; in -> parse tree with main method
 ; out-> program output
 
-; run tests with (_i "parser_level1/p1_test01.txt")
+; run tests with (_i "parser_level1\\p1_test01.txt" #t)
 
 ; _ leading underscore denotes a function called by other scripts
 
@@ -44,7 +44,7 @@
       ((null? l) (error "Null input to interpreter."))
       (else (M_state (car l) (cdr l) state 
                      (lambda (state) (error "code did not return")) 
-                     (lambda (val state) (display state) (pretify val)) 
+                     (lambda (val state) (display state) (display "\n") (pretify val)) 
                      (lambda (excep) (error "Code throws exception")) 
                      (lambda (cont) (error "Code attempts to continue outside of loop"))
                      (lambda (break) (error "Code attempts to break outside of loop")))))))
@@ -140,8 +140,7 @@
 
 (define M_s_assign
   (lambda (arg arg_list state term return excep cont break)
-    (cond
-      (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) (caddr arg) state) term return excep cont break))))
+    (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) (caddr arg) state) term return excep cont break)))
 
 ; === M_state utils ===
       
@@ -188,7 +187,7 @@
       ((null? arg) (error "M_value: null arg"))
       ((integer? arg) (return arg state))
       ((is_math? arg) (M_v_math arg state return))
-      ((symbol? arg) (return (find_obj (arg) state) state))
+      ((symbol? arg) (return (find_var arg state) state))
       (else (display arg) (error "M_value for this isn't implemented")))))
        
 ; === M value pieces ===
@@ -197,6 +196,7 @@
   (lambda (arg)
     (cond
       ((null? arg) #f)
+      ((not (list? arg)) #f)
       ((> (length arg) 3) #f)
       ((< (length arg) 2) #f)
       ((op? '- 2 arg) #t)
@@ -233,6 +233,10 @@
     (M_value left_arg state0 (lambda (val_left state1) 
                                                        (M_value right_arg state1 (lambda (val_right state2)
                                                                                      (return (operation val_left val_right) state2)))))))
+
+(define op_1
+  (lambda (operation arg state0 return)
+    (M_value arg state0 (lambda (val_arg state1) (return (operation val_arg) state1)))))
 
 ; ====== M boolean ======
 ; evaluate conditional (while, for, if that kind of thing)
