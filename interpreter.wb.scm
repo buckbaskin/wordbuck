@@ -16,17 +16,17 @@
   (lambda ()
     "help! Use (_i file_path [#t|#f]) to run"))
 
-(define interpret_debug
+(define interpret-debug
   (lambda (parsed-file)
     (begin
       (display "parsed file \n")
       (display parsed-file)
       (display "\ninterpreter out:\n")
-      (interpret parsed-file))))
+      (process_arg_list parsed-file (new_state) #t))))
 
 (define interpret
   (lambda (parsed-file)
-    (process_arg_list parsed-file (new_state))))
+    (process_arg_list parsed-file (new_state) #f)))
 
 (define _run-interpreter
   (lambda (raw-file)
@@ -35,16 +35,19 @@
 (define _i
   (lambda (file debug)
     (cond
-      (debug (interpret_debug (parser file)))
+      (debug (interpret-debug (parser file)))
       (else (interpret (parser file))))))
 
 (define process_arg_list
-  (lambda (l state)
+  (lambda (l state debug)
     (cond
       ((null? l) (error "Null input to interpreter."))
       (else (M_state (car l) (cdr l) state 
                      (lambda (state) (error "code did not return")) 
-                     (lambda (val state) (display state) (display "\n") (pretify val)) 
+                     (lambda (val state)
+                       (cond
+                         (debug (begin (display state)) (display "\n") (pretify val))
+                         (else (pretify val)))) 
                      (lambda (excep) (error "Code throws exception")) 
                      (lambda (cont) (error "Code attempts to continue outside of loop"))
                      (lambda (break) (error "Code attempts to break outside of loop")))))))
@@ -98,12 +101,12 @@
       ((is_return? arg) (M_s_return arg arg_list state term return excep cont break))
       ((is_declare? arg) (M_s_declare arg arg_list state term return excep cont break))
       ((is_assign? arg) (M_s_assign arg arg_list state term return excep cont break))
-      (else (display "arg\n") 
-            (display arg) 
-            (display "\nstate\n") 
+      (else (display "\nstate\n") 
             (display state) 
+            (display "\narg\n") 
+            (display arg)
             (display "\n") 
-            (error "That part of M_s is not defined")))))
+            (error "^ The above part of M_state is not defined")))))
 
 ; === M state pieces ===
 
@@ -240,3 +243,11 @@
 
 ; ====== M boolean ======
 ; evaluate conditional (while, for, if that kind of thing)
+
+
+; ====== TESTING ======
+(define test
+  (lambda ()
+    (begin
+      (load "test.interpreter.wb.scm")
+      (_test))))
