@@ -130,7 +130,7 @@
   (lambda (arg arg_list state term return excep cont break)
     (cond
       ((eq? (length arg) 2) (M_state (car arg_list) (cdr arg_list) (create_obj (cadr arg) state) term return excep cont break))
-      (else (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) (caddr arg) (create_obj (cadr arg) state)) term return excep cont break)))))
+      (else (M_s_assign (list '= (cadr arg) (caddr arg)) arg_list (create_obj (cadr arg) state) term return excep cont break)))))
 
 (define is_assign?
   (lambda (arg)
@@ -140,7 +140,7 @@
 
 (define M_s_assign
   (lambda (arg arg_list state term return excep cont break)
-    (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) (caddr arg) state) term return excep cont break)))
+    (M_value (caddr arg) state (lambda (val state1) (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) val state1) term return excep cont break)))))
 
 ; === M_state utils ===
       
@@ -153,8 +153,8 @@
     (error "create: not yet implemented")))
 
 (define assign_obj ; method is the programmer facing. Splits state, and then rebuilds state
-  (lambda (name obj state)
-    (assign name obj (car state) (cadr state) (lambda (names objs) (list names objs)))))
+  (lambda (name val state)
+    (assign name val (car state) (cadr state) (lambda (names vals) (list names vals)))))
      
 (define assign
   (lambda (name obj name_list obj_list return)
