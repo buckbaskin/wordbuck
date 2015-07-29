@@ -181,7 +181,7 @@
 (define assign
   (lambda (name obj name_list obj_list return)
     (cond
-      ((or (null? name_list) (null? obj_list)) (error "assign_var: variable not yet initialized"))
+      ((or (null? name_list) (null? obj_list)) (error "Variable assignment before declaration\nassign_var: variable not yet initialized"))
       ((eq? name (car name_list)) (return name_list (cons obj (cdr obj_list))))
       (else (assign name obj (cdr name_list) (cdr obj_list) (lambda (names objs) (return (cons (car name_list) names) (cons (car obj_list) objs))))))))
 
@@ -192,10 +192,10 @@
 (define find
   (lambda (name var_list val_list return)
     (cond
-      ((or (null? var_list) (null? val_list)) (error "find_var: variable not yet declared"))
+      ((or (null? var_list) (null? val_list)) (error "Variable access before declaration\nfind_var: variable not yet declared"))
       ((eq? name (car var_list))
        (cond
-         ((eq? (car val_list) 'notDefined) (error "find_var: variable not initialized"))
+         ((eq? (car val_list) 'notDefined) (error "Variable access before assignment\nfind_var: variable not initialized"))
          (else (return (car val_list)))))
       (else (find name (cdr var_list) (cdr val_list) return)))))
 
