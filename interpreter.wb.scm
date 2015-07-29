@@ -168,11 +168,17 @@
       
 (define create_obj
   (lambda (name state)
-    (list (cons name (car state)) (cons 'notDefined (cadr state)))))
+    (cond
+      ((unique? name state) (list (cons name (car state)) (cons 'notDefined (cadr state))))
+      (else (error "Variable already declared. Shouldn't redefine.\ncreate_obj: variable name already defined")))))
 
 (define create ; helper to create_obj when the state is more complicated
   (lambda (name var_list val_list return)
     (error "create: not yet implemented")))
+
+(define unique?
+  (lambda (name state)
+    (not (foldl (lambda (a b) (or a b)) #f (map (lambda (e) (eq? e name)) (car state))))))
 
 (define assign_obj ; method is the programmer facing. Splits state, and then rebuilds state
   (lambda (name val state)
