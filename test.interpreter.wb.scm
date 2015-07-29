@@ -8,7 +8,7 @@
                                                    "parser_level1\\p1_test08.txt" "parser_level1\\p1_test09.txt" "parser_level1\\p1_test10.txt") 
                   '(150 -4 10 16 220 5 6 10 5 -39)
                   '1) (begin
-                        (display "All Tests passed\n")
+                        (display " passed\nAll Tests passed\n")
                         #t))
       (else (begin (display " <<< failed test(s)\n") #f)))))
 

@@ -101,6 +101,7 @@
       ((is_return? arg) (M_s_return arg arg_list state term return excep cont break))
       ((is_declare? arg) (M_s_declare arg arg_list state term return excep cont break))
       ((is_assign? arg) (M_s_assign arg arg_list state term return excep cont break))
+      ((is_if? arg) (M_s_if arg arg_list state term return excep cont break))
       (else (display "\nstate\n") 
             (display state) 
             (display "\narg\n") 
@@ -144,6 +145,24 @@
 (define M_s_assign
   (lambda (arg arg_list state term return excep cont break)
     (M_value (caddr arg) state (lambda (val state1) (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) val state1) term return excep cont break)))))
+;(if <condition> <then> <else>)
+;(car cadr caddr cadddr)
+(define is_if?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((> (length arg) 4) #f)
+      ((< (length arg) 3) #f)
+      (else (eq? 'if (car arg))))))
+
+(define M_s_if
+  (lambda (arg arg_list state term return excep cont break)
+    (M_bool (cadr arg) state (lambda (condition state)
+                               (cond
+                                 (condition (M_state (caddr arg) arg_list state term return excep cont break))
+                                 ((eq? (length arg) '4) (M_state (cadddr arg) arg_list state term return excep cont break))
+                                 (else (M_state (car arg_list) (cdr arg_list) state term return excep cont break)))))))
+                                  
 
 ; === M_state utils ===
       
@@ -185,11 +204,12 @@
 ; ====== M Value ======
 ; evaluate 
 (define M_value
-  (lambda (arg state return)
+  (lambda (arg state return) ; Note: return takes (value state)
     (cond
       ((null? arg) (error "M_value: null arg"))
       ((integer? arg) (return arg state))
       ((is_math? arg) (M_v_math arg state return))
+      ((is_comparison? arg) (M_v_comparison arg state return))
       ((symbol? arg) (return (find_var arg state) state))
       (else (display arg) (error "M_value for this isn't implemented")))))
        
@@ -202,8 +222,8 @@
       ((not (list? arg)) #f)
       ((> (length arg) 3) #f)
       ((< (length arg) 2) #f)
-      ((op? '- 2 arg) #t)
-      (else (foldl (lambda (a b) (or a (eval b))) #f (map (lambda (operator) (op? operator 2 arg)) '(- + / % *)))))))
+      ((op? '- 1 arg) #t)
+      (else (match_list arg '(- + / % *))))))
 
 (define M_v_math
   (lambda (arg state return)
@@ -220,7 +240,33 @@
       ((null? arg) #f)
       ((> (length arg) 3) #f)
       ((< (length arg) 2) #f)
-      (else (foldl (lambda (a b) (or a (eval b))) #f (map (lambda (operator) (op? operator 2 arg)) '(&& || !)))))))
+      (else (match_list arg '(&& || !))))))
+
+(define is_comparison?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((not (list? arg)) #f)
+      ((> (length arg) 3) #f)
+      ((< (length arg) 2) #f)
+      ((op? '! 1 arg) #t)
+      (else (match_list arg '(< <= == != >= >))))))
+
+(define M_v_comparison
+  (lambda (arg state return)
+    (cond
+      ;((op? '!= '2 arg) (op_2 (lambda (a b) (not (eq? a b))) (cadr arg) (caddr arg) state return))
+      ;((op? '== '2 arg) (op_2 (lambda (a b) (eq? a b)) (cadr arg) (caddr arg) state return))
+      ((eq? '3 (length arg)) (op_2 (eval (car arg)) (cadr arg) (caddr arg) state return))
+      (else (display arg) (error "M_v_comparison: this operator not yet implemented")))))
+
+(define ==
+  (lambda (a b)
+    (eq? a b)))
+
+(define !=
+  (lambda (a b)
+    (not (eq? a b))))
 
 ; === M value utlities ===
 
@@ -241,8 +287,23 @@
   (lambda (operation arg state0 return)
     (M_value arg state0 (lambda (val_arg state1) (return (operation val_arg) state1)))))
 
+(define match_list
+  (lambda (arg list)
+    (foldl (lambda (a b) (or a (eval b))) #f (map (lambda (operator) (op? operator 2 arg)) list))))
+
 ; ====== M boolean ======
 ; evaluate conditional (while, for, if that kind of thing)
+
+(define M_bool
+  (lambda (arg state return)
+    (cond
+      ((null? arg) (error "M_bool: null arg"))
+      ((or (eq? #t arg) (eq? 'true arg)) (return #t))
+      ((or (eq? #f arg) (eq? 'false arg)) (return #f))
+      (else (M_value arg state (lambda (v state) 
+                                 (cond
+                                   ((integer? v) (error "M_bool: condition evaluated to integer"))
+                                   (else (return v state)))))))))
 
 
 ; ====== TESTING ======
