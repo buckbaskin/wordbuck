@@ -216,6 +216,9 @@
       ((integer? arg) (return arg state))
       ((is_math? arg) (M_v_math arg state return))
       ((is_comparison? arg) (M_v_comparison arg state return))
+      ((is_bool_op? arg) (M_v_bool_op arg state return))
+      ((or (eq? 'true arg) (eq? #t arg)) (return #t state))
+      ((or (eq? 'false arg) (eq? #f arg)) (return #f state))
       ((symbol? arg) (return (find_var arg state) state))
       (else (display arg) (error "M_value for this isn't implemented")))))
        
@@ -240,13 +243,22 @@
       ((eq? '2 (length arg)) (op_1 (eval (car arg)) (cadr arg) state return))
       (else (display arg) (error "M_v_math: this operator not yet implemented")))))
 
-(define is_bool?
+(define is_bool_op?
   (lambda (arg)
     (cond
       ((null? arg) #f)
+      ((not (list? arg)) #f)
       ((> (length arg) 3) #f)
       ((< (length arg) 2) #f)
       (else (match_list arg '(&& || !))))))
+
+(define M_v_bool_op
+  (lambda (arg state return)
+    (cond
+      ((op? '! '1 arg) (op_2 (lambda (a) (not a)) (cadr arg) (caddr arg) state return))
+      ((op? '&& '2 arg) (op_2 (lambda (a b) (and a b)) (cadr arg) (caddr arg) state return))
+      ((op? '|| '2 arg) (op_2 (lambda (a b) (or a b)) (cadr arg) (caddr arg) state return))
+      (else (display arg) (error "M_v_bool_op?: this operator not yet implemented")))))
 
 (define is_comparison?
   (lambda (arg)
@@ -286,8 +298,8 @@
 (define op_2
   (lambda (operation left_arg right_arg state0 return)
     (M_value left_arg state0 (lambda (val_left state1) 
-                                                       (M_value right_arg state1 (lambda (val_right state2)
-                                                                                     (return (operation val_left val_right) state2)))))))
+                               (M_value right_arg state1 (lambda (val_right state2)
+                                                           (return (operation val_left val_right) state2)))))))
 
 (define op_1
   (lambda (operation arg state0 return)
