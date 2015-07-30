@@ -5,8 +5,13 @@
     (cond
       ((test_list '("parser_level1\\p1_test01.txt" "parser_level1\\p1_test02.txt" "parser_level1\\p1_test03.txt" "parser_level1\\p1_test04.txt"
                                                    "parser_level1\\p1_test05.txt" "parser_level1\\p1_test06.txt" "parser_level1\\p1_test07.txt"
-                                                   "parser_level1\\p1_test08.txt" "parser_level1\\p1_test09.txt" "parser_level1\\p1_test10.txt") 
-                  '(150 -4 10 16 220 5 6 10 5 -39)
+                                                   "parser_level1\\p1_test08.txt" "parser_level1\\p1_test09.txt" "parser_level1\\p1_test10.txt"
+                                                   
+                                                   "parser_level1\\p1_test15.txt" "parser_level1\\p1_test16.txt" "parser_level1\\p1_test17.txt"
+                                                   "parser_level1\\p1_test18.txt"
+                                                   "parser_level1\\p1_test19.txt" "parser_level1\\p1_test20.txt" "parser_level1\\p1_test21.txt"
+                                                   "parser_level1\\p1_test22.txt" "parser_level1\\p1_test23.txt" "parser_level1\\p1_test24.txt")
+                  '(150 -4 10 16 220 5 6 10 5 -39 "Truth" 100 "Naht Truth" "True" 30 11 1106 12 16 72)
                   '1) (begin
                         (display "All Tests passed\n")
                         #t))
