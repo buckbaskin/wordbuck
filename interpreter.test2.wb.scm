@@ -14,12 +14,15 @@
                                                    
                                                    "parser_level2\\p2_test01.txt" "parser_level2\\p2_test02.txt" "parser_level2\\p2_test03.txt" ; 23
                                                    "parser_level2\\p2_test04.txt" "parser_level2\\p2_test05.txt" "parser_level2\\p2_test06.txt" ; 26
-                                                   "parser_level2\\p2_test07.txt" "parser_level2\\p2_test08.txt" "parser_level2\\p2_test09.txt" ; 29
-                                                   "parser_level2\\p2_test10.txt" "parser_level2\\p2_test11.txt" "parser_level2\\p2_test12.txt") ; 32
+                                                   "parser_level2\\p2_test07.txt" "parser_level2\\p2_test11.txt" "parser_level2\\p2_test12.txt" ; 29
+                                                   "parser_level2\\p2_test13.txt") ; 30
                   '(150 -4 10 16 220 ; 5
                         5 6 10 5 -39 ; 10
                         "Truth" 100 "Naht Truth" "Truth" 30 ; 15
-                        11 1106 12 16 72) ; 20 ; TODO expand (currently only testing level 1)
+                        11 1106 12 16 72 ; 20
+                        100 20 6 -1 789 ; 25
+                        2 164 12 32 21 ; 30
+                        )
                   '1) (begin
                         (display "All Tests passed\n")
                         #t))
