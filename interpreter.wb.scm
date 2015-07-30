@@ -140,11 +140,13 @@
   (lambda (arg)
     (cond
       ((null? arg) #f)
+      ((not (list? arg)) #f)
       (else (eq? '= (car arg))))))
 
 (define M_s_assign
   (lambda (arg arg_list state term return excep cont break)
     (M_value (caddr arg) state (lambda (val state1) (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) val state1) term return excep cont break)))))
+
 ;(if <condition> <then> <else>)
 ;(car cadr caddr cadddr)
 (define is_if?
@@ -219,6 +221,7 @@
       ((is_bool_op? arg) (M_v_bool_op arg state return))
       ((or (eq? 'true arg) (eq? #t arg)) (return #t state))
       ((or (eq? 'false arg) (eq? #f arg)) (return #f state))
+      ((is_assign? arg) (M_v_assign arg state return))
       ((symbol? arg) (return (find_var arg state) state))
       (else (display arg) (error "M_value for this isn't implemented")))))
        
@@ -285,6 +288,11 @@
 (define !=
   (lambda (a b)
     (not (eq? a b))))
+
+(define M_v_assign
+  (lambda (arg state return)
+    (M_value (caddr arg) state (lambda (val state1)
+                                 (return val (assign_obj (cadr arg) val state1))))))
 
 ; === M value utlities ===
 
