@@ -250,12 +250,13 @@
       ((not (list? arg)) #f)
       ((> (length arg) 3) #f)
       ((< (length arg) 2) #f)
-      (else (match_list arg '(&& || !))))))
+      ((op? '! 1 arg) #t)
+      (else (match_list arg '(&& ||))))))
 
 (define M_v_bool_op
   (lambda (arg state return)
     (cond
-      ((op? '! '1 arg) (op_2 (lambda (a) (not a)) (cadr arg) (caddr arg) state return))
+      ((op? '! '1 arg) (op_1 (lambda (a) (not a)) (cadr arg) state return))
       ((op? '&& '2 arg) (op_2 (lambda (a b) (and a b)) (cadr arg) (caddr arg) state return))
       ((op? '|| '2 arg) (op_2 (lambda (a b) (or a b)) (cadr arg) (caddr arg) state return))
       (else (display arg) (error "M_v_bool_op?: this operator not yet implemented")))))
@@ -267,7 +268,6 @@
       ((not (list? arg)) #f)
       ((> (length arg) 3) #f)
       ((< (length arg) 2) #f)
-      ((op? '! 1 arg) #t)
       (else (match_list arg '(< <= == != >= >))))))
 
 (define M_v_comparison
