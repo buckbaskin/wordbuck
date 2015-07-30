@@ -168,11 +168,17 @@
       
 (define create_obj
   (lambda (name state)
-    (list (cons name (car state)) (cons 'notDefined (cadr state)))))
+    (cond
+      ((unique? name state) (list (cons name (car state)) (cons 'notDefined (cadr state))))
+      (else (error "Variable already declared. Shouldn't redefine.\ncreate_obj: variable name already defined")))))
 
 (define create ; helper to create_obj when the state is more complicated
   (lambda (name var_list val_list return)
     (error "create: not yet implemented")))
+
+(define unique?
+  (lambda (name state)
+    (not (foldl (lambda (a b) (or a b)) #f (map (lambda (e) (eq? e name)) (car state))))))
 
 (define assign_obj ; method is the programmer facing. Splits state, and then rebuilds state
   (lambda (name val state)
@@ -181,7 +187,7 @@
 (define assign
   (lambda (name obj name_list obj_list return)
     (cond
-      ((or (null? name_list) (null? obj_list)) (error "assign_var: variable not yet initialized"))
+      ((or (null? name_list) (null? obj_list)) (error "Variable assignment before declaration\nassign_var: variable not yet initialized"))
       ((eq? name (car name_list)) (return name_list (cons obj (cdr obj_list))))
       (else (assign name obj (cdr name_list) (cdr obj_list) (lambda (names objs) (return (cons (car name_list) names) (cons (car obj_list) objs))))))))
 
@@ -192,10 +198,10 @@
 (define find
   (lambda (name var_list val_list return)
     (cond
-      ((or (null? var_list) (null? val_list)) (error "find_var: variable not yet declared"))
+      ((or (null? var_list) (null? val_list)) (error "Variable access before declaration\nfind_var: variable not yet declared"))
       ((eq? name (car var_list))
        (cond
-         ((eq? (car val_list) 'notDefined) (error "find_var: variable not initialized"))
+         ((eq? (car val_list) 'notDefined) (error "Variable access before assignment\nfind_var: variable not initialized"))
          (else (return (car val_list)))))
       (else (find name (cdr var_list) (cdr val_list) return)))))
 
@@ -210,6 +216,9 @@
       ((integer? arg) (return arg state))
       ((is_math? arg) (M_v_math arg state return))
       ((is_comparison? arg) (M_v_comparison arg state return))
+      ((is_bool_op? arg) (M_v_bool_op arg state return))
+      ((or (eq? 'true arg) (eq? #t arg)) (return #t state))
+      ((or (eq? 'false arg) (eq? #f arg)) (return #f state))
       ((symbol? arg) (return (find_var arg state) state))
       (else (display arg) (error "M_value for this isn't implemented")))))
        
@@ -234,13 +243,22 @@
       ((eq? '2 (length arg)) (op_1 (eval (car arg)) (cadr arg) state return))
       (else (display arg) (error "M_v_math: this operator not yet implemented")))))
 
-(define is_bool?
+(define is_bool_op?
   (lambda (arg)
     (cond
       ((null? arg) #f)
+      ((not (list? arg)) #f)
       ((> (length arg) 3) #f)
       ((< (length arg) 2) #f)
       (else (match_list arg '(&& || !))))))
+
+(define M_v_bool_op
+  (lambda (arg state return)
+    (cond
+      ((op? '! '1 arg) (op_2 (lambda (a) (not a)) (cadr arg) (caddr arg) state return))
+      ((op? '&& '2 arg) (op_2 (lambda (a b) (and a b)) (cadr arg) (caddr arg) state return))
+      ((op? '|| '2 arg) (op_2 (lambda (a b) (or a b)) (cadr arg) (caddr arg) state return))
+      (else (display arg) (error "M_v_bool_op?: this operator not yet implemented")))))
 
 (define is_comparison?
   (lambda (arg)
@@ -280,8 +298,8 @@
 (define op_2
   (lambda (operation left_arg right_arg state0 return)
     (M_value left_arg state0 (lambda (val_left state1) 
-                                                       (M_value right_arg state1 (lambda (val_right state2)
-                                                                                     (return (operation val_left val_right) state2)))))))
+                               (M_value right_arg state1 (lambda (val_right state2)
+                                                           (return (operation val_left val_right) state2)))))))
 
 (define op_1
   (lambda (operation arg state0 return)
