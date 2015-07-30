@@ -1,4 +1,4 @@
-(load "parser_level1/simpleParser.scm")
+(load "parser_level2/simpleParser.scm")
 
 ; INTERPRETER
 ; Interpreter takes in a parsed file, and evaluates the
@@ -8,7 +8,7 @@
 ; in -> parse tree with main method
 ; out-> program output
 
-; run tests with (_i "parser_level1\\p1_test01.txt" #t)
+; run tests with (_i "parser_level2\\p2_test01.txt" #t)
 
 ; _ leading underscore denotes a function called by other scripts
 
@@ -336,5 +336,5 @@
 (define test
   (lambda ()
     (begin
-      (load "test.interpreter.wb.scm")
+      (load "interpreter.test2.wb.scm")
       (_test))))
