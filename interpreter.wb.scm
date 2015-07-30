@@ -102,6 +102,7 @@
       ((is_declare? arg) (M_s_declare arg arg_list state term return excep cont break))
       ((is_assign? arg) (M_s_assign arg arg_list state term return excep cont break))
       ((is_if? arg) (M_s_if arg arg_list state term return excep cont break))
+      ((is_while? arg) (M_s_while arg arg_list state term return excep cont break))
       (else (display "\nstate\n") 
             (display state) 
             (display "\narg\n") 
@@ -163,6 +164,20 @@
                                (cond
                                  (condition (M_state (caddr arg) arg_list state term return excep cont break))
                                  ((eq? (length arg) '4) (M_state (cadddr arg) arg_list state term return excep cont break))
+                                 (else (M_state (car arg_list) (cdr arg_list) state term return excep cont break)))))))
+
+(define is_while?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((not (eq? (length arg) '3)) #f)
+      (else (eq? 'while (car arg))))))
+
+(define M_s_while
+  (lambda (arg arg_list state term return excep cont break)
+    (M_bool (cadr arg) state (lambda (condition state)
+                               (cond
+                                 (condition (M_state (caddr arg) (cons arg arg_list) state term return excep cont break))
                                  (else (M_state (car arg_list) (cdr arg_list) state term return excep cont break)))))))
                                   
 
