@@ -94,7 +94,7 @@
     (cond
       ((not (and (list? vars) (list? vals))) (error "merge_state: improperly formatted input"))
       ((and (null? vars) (null? vals)) (return '()))
-      ((eq? (length vars) (length vals)) (merge_state (cdr vars) (cdr vals) (return (cons (list (car vars) (car vals)) state))))
+      ((eq? (length vars) (length vals)) (merge_state (cdr vars) (cdr vals) (lambda (state) (return (cons (list (car vars) (car vals)) state)))))
       (else (error "merge_state: vars and vals not equal")))))
     
 (define pretify
@@ -161,8 +161,8 @@
 (define M_s_declare
   (lambda (arg arg_list state term return excep cont break)
     (cond
-      ((eq? (length arg) 2) (M_state (car arg_list) (cdr arg_list) (create_obj (cadr arg) state) term return excep cont break))
-      (else (M_s_assign (list '= (cadr arg) (caddr arg)) arg_list (create_obj (cadr arg) state) term return excep cont break)))))
+      ((eq? (length arg) 2) (M_state (car arg_list) (cdr arg_list) (create_var (cadr arg) state) term return excep cont break))
+      (else (M_s_assign (list '= (cadr arg) (caddr arg)) arg_list (create_var (cadr arg) state) term return excep cont break)))))
 
 (define is_assign?
   (lambda (arg)
@@ -173,7 +173,7 @@
 
 (define M_s_assign
   (lambda (arg arg_list state term return excep cont break)
-    (M_value (caddr arg) state (lambda (val state1) (M_state (car arg_list) (cdr arg_list) (assign_obj (cadr arg) val state1) term return excep cont break)))))
+    (M_value (caddr arg) state (lambda (val state1) (M_state (car arg_list) (cdr arg_list) (assign_var (cadr arg) val state1) term return excep cont break)))))
 
 ;(if <condition> <then> <else>)
 ;(car cadr caddr cadddr)
@@ -213,18 +213,29 @@
 (define create_var
   (lambda (name state)
     (cond
-      ((unique? name state) (create ))
-      (else (error "Variable already declared. Shouldn't redefine.\ncreate_obj: variable name already defined")))))
+      ((unique? name state) (split_state state (lambda (vars vals) 
+                                                 (create name vars vals (lambda (state_with_var) state_with_var)))))
+      (else (error "Variable already declared. Shouldn't redefine.\ncreate_var: variable name already defined")))))
 
-(define create ; helper to create_obj when the state is more complicated
+(define create ; helper to create_var
   (lambda (name var_list val_list return)
-    (error "create: not yet implemented")))
+    (merge_state (cons (cons name (car var_list)) (cdr var_list))
+                 (cons (cons name (car val_list)) (cdr val_list))
+                 (lambda (state) (return state)))))
 
-(define unique? ; TODO
+(define unique? ; TODO, needs to be unique in the top layer
   (lambda (name state)
-    (not (foldl (lambda (a b) (or a b)) #f (map (lambda (e) (eq? e name)) (car state))))))
+    (cond
+      ((not (is_valid_state? state)) (error "unique?: invalid state"))
+      (else (uni_in_layer? name (car state))))))
 
-(define assign_obj ; method is the programmer facing. Splits state, and then rebuilds state
+(define uni_in_layer?
+  (lambda (name layer)
+    (not (foldl (lambda (a b) (or a b)) #f (map (lambda (e) (eq? e name)) (car layer))))))
+    
+
+; TODO assign a var in the highest layer
+(define assign_var ; method is the programmer facing. Splits state, and then rebuilds state
   (lambda (name val state)
     (assign name val (car state) (cadr state) (lambda (names vals) (list names vals)))))
      
@@ -334,7 +345,7 @@
 (define M_v_assign
   (lambda (arg state return)
     (M_value (caddr arg) state (lambda (val state1)
-                                 (return val (assign_obj (cadr arg) val state1))))))
+                                 (return val (assign_var (cadr arg) val state1))))))
 
 ; === M value utlities ===
 
