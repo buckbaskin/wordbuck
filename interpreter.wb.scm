@@ -263,7 +263,10 @@
 (define find_var
   (lambda (name state)
     (split_state state (lambda (vars vals)
-                         (find name vars vals (lambda (val) val))))))
+                         (find name vars vals (lambda (val)
+                                                (cond
+                                                  ((eq? val 'notDefined) (error "Variable access before assignment\nfind_var: variable not yet assigned"))
+                                                  (else val))))))))
 
 (define find ; helper to find_var
   (lambda (name var_list val_list return)
