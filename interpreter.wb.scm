@@ -140,6 +140,7 @@
       ((is_assign? arg) (M_s_assign arg arg_list state term return excep cont break))
       ((is_if? arg) (M_s_if arg arg_list state term return excep cont break))
       ((is_while? arg) (M_s_while arg arg_list state term return excep cont break))
+      ((is_block? arg) (M_s_block arg arg_list state term return excep cont break))
       (else (display "\nstate\n") 
             (display state) 
             (display "\narg\n") 
@@ -207,6 +208,7 @@
   (lambda (arg)
     (cond
       ((null? arg) #f)
+      ((not (list? arg)) #f)
       ((not (eq? (length arg) '3)) #f)
       (else (eq? 'while (car arg))))))
 
@@ -216,6 +218,18 @@
                                (cond
                                  (condition (M_state (caddr arg) (cons arg arg_list) state term return excep cont break))
                                  (else (M_state (car arg_list) (cdr arg_list) state term return excep cont break)))))))
+
+(define is_block?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((not (list? arg)) #f)
+      ((<= (length arg) 1) #f)
+      (else (eq? 'begin (car arg))))))
+
+(define M_s_block
+  (lambda (arg arg_list state term return excep cont break)
+    (error "M_s_block: not yet implemented")))
                                   
 
 ; === M_state utils ===
