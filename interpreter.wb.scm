@@ -243,9 +243,22 @@
 (define assign ; TODO start here. take in split state, and assign value to variable, return new split state
   (lambda (name val var_list val_list return)
     (cond
-      ((or (null? name_list) (null? obj_list)) (error "Variable assignment before declaration\nassign_var: variable not yet initialized"))
-      ((eq? name (car name_list)) (return name_list (cons obj (cdr obj_list))))
-      (else (assign name obj (cdr name_list) (cdr obj_list) (lambda (names objs) (return (cons (car name_list) names) (cons (car obj_list) objs))))))))
+      ((or (null? var_list) (null? val_list)) (error "Variable assignment before declaration\nassign: variable not yet initialized"))
+      ((or (not (list? var_list)) (not (list? val_list))) (error "assign: Malformed var or val list"))
+      ((not (and (list? (car var_list)) (list? (car val_list)))) (error "assign: Malformed var or val list (element not a list)"))
+      (else (try_assign_layer name val (car var_list) (car val_list) (lambda (set vars vals) ; returned from setting in layer
+                                                                       (cond
+                                                                         (set (return (cons vars (cdr var_list)) (cons vals (cdr val_list))))
+                                                                         (else (assign name val (cdr var_list) (cdr val_list) (lambda (var_list2 val_list2) ; returned from assign rest
+                                                                                                                                (return (cons (car var_list) var_list2) (cons (car val_list) val_list2))))))))))))
+
+(define try_assign_layer
+  (lambda (name val var_layer val_layer return)
+    (cond
+      ((or (null? var_layer) (null? val_layer)) (return #f '() '()))
+      ((eq? (car var_layer) name) (return #t var_layer (cons val (cdr val_layer))))
+      (else (try_assign_layer name val (cdr var_layer) (cdr val_layer) (lambda (set vars vals)
+                                                                         (return set (cons (car var_layer) vars) (cons (car val_layer) vals))))))))
 
 (define find_var ; TODO
   (lambda (name state)
