@@ -240,7 +240,7 @@
                          (assign name val vars vals (lambda (vars vals)
                                                       (merge_state vars vals (lambda (state) state))))))))
      
-(define assign ; TODO start here. take in split state, and assign value to variable, return new split state
+(define assign
   (lambda (name val var_list val_list return)
     (cond
       ((or (null? var_list) (null? val_list)) (error "Variable assignment before declaration\nassign: variable not yet initialized"))
@@ -260,19 +260,26 @@
       (else (try_assign_layer name val (cdr var_layer) (cdr val_layer) (lambda (set vars vals)
                                                                          (return set (cons (car var_layer) vars) (cons (car val_layer) vals))))))))
 
-(define find_var ; TODO
+(define find_var
   (lambda (name state)
-    (find name (car state) (cadr state) (lambda (val) val))))
+    (split_state state (lambda (vars vals)
+                         (find name vars vals (lambda (val) val))))))
 
-(define find ; TODO
+(define find ; helper to find_var
   (lambda (name var_list val_list return)
     (cond
       ((or (null? var_list) (null? val_list)) (error "Variable access before declaration\nfind_var: variable not yet declared"))
-      ((eq? name (car var_list))
-       (cond
-         ((eq? (car val_list) 'notDefined) (error "Variable access before assignment\nfind_var: variable not initialized"))
-         (else (return (car val_list)))))
-      (else (find name (cdr var_list) (cdr val_list) return)))))
+      (else (try_find_layer name (car var_list) (car val_list) (lambda (found value)
+                                                                 (cond
+                                                                   (found (return value))
+                                                                   (else (find name (cdr var_list) (cdr val_list) return)))))))))
+
+(define try_find_layer
+  (lambda (name var_layer val_layer return)
+    (cond
+      ((or (null? var_layer) (null? val_layer)) (return #f '()))
+      ((eq? (car var_layer) name) (return #t (car val_layer)))
+      (else (try_find_layer name (cdr var_layer) (cdr val_layer) return)))))
 
 ; ====== M Value ======
 ; evaluate 
