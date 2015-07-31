@@ -66,6 +66,16 @@
   (lambda ()
     '(() ())))
 
+(define add_layer
+  (lambda (layer state)
+    (cons layer state)))
+
+(define remove_layer
+  (lambda (state)
+    (cond
+      ((null? state) (error "remove_layer: cannot remove layer from empty state"))
+      (else (cdr state)))))
+
 (define is_valid_state?
   (lambda (state)
     (cond
