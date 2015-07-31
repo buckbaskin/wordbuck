@@ -60,16 +60,43 @@
 (define new_state
   (lambda ()
     ; ((names) (objs))
+    (list (new_layer))))
+
+(define new_layer
+  (lambda ()
     '(() ())))
 
 (define is_valid_state?
   (lambda (state)
     (cond
       ((null? state) #f)
-      ((not (list? state)) #f)
-      ((eq? (length state) '2) #t)
-      (else #f))))
+      (else (lol state (lambda (v) v))))))
 
+(define lol ; list of layers
+  (lambda (l return)
+    (cond
+      ((null? l) (return #t))
+      ((not (list? l)) (return #f))
+      ((not (list? (car l))) (return #f))
+      ((not (eq? (length (car l)) '2)) (return #f))
+      (else (lol (cdr l) return)))))
+
+(define split_state
+  (lambda (state return)
+    (cond
+      ((null? state) (return '() '()))
+      ((not (is_valid_state? state)) (error "split_state: invalid state"))
+      (else (split_state (cdr state) (lambda (vars vals)
+                                       (return (cons (car (car state)) vars) (cons (cadr (car state)) vals))))))))
+
+(define merge_state
+  (lambda (vars vals return)
+    (cond
+      ((not (and (list? vars) (list? vals))) (error "merge_state: improperly formatted input"))
+      ((and (null? vars) (null? vals)) (return '()))
+      ((eq? (length vars) (length vals)) (merge_state (cdr vars) (cdr vals) (return (cons (list (car vars) (car vals)) state))))
+      (else (error "merge_state: vars and vals not equal")))))
+    
 (define pretify
   (lambda (value)
     (cond
@@ -183,17 +210,17 @@
 
 ; === M_state utils ===
       
-(define create_obj
+(define create_var
   (lambda (name state)
     (cond
-      ((unique? name state) (list (cons name (car state)) (cons 'notDefined (cadr state))))
+      ((unique? name state) (create ))
       (else (error "Variable already declared. Shouldn't redefine.\ncreate_obj: variable name already defined")))))
 
 (define create ; helper to create_obj when the state is more complicated
   (lambda (name var_list val_list return)
     (error "create: not yet implemented")))
 
-(define unique?
+(define unique? ; TODO
   (lambda (name state)
     (not (foldl (lambda (a b) (or a b)) #f (map (lambda (e) (eq? e name)) (car state))))))
 
