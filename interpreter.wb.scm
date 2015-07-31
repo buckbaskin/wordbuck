@@ -223,7 +223,7 @@
                  (cons (cons name (car val_list)) (cdr val_list))
                  (lambda (state) (return state)))))
 
-(define unique? ; TODO, needs to be unique in the top layer
+(define unique?
   (lambda (name state)
     (cond
       ((not (is_valid_state? state)) (error "unique?: invalid state"))
@@ -234,23 +234,24 @@
     (not (foldl (lambda (a b) (or a b)) #f (map (lambda (e) (eq? e name)) (car layer))))))
     
 
-; TODO assign a var in the highest layer
 (define assign_var ; method is the programmer facing. Splits state, and then rebuilds state
   (lambda (name val state)
-    (assign name val (car state) (cadr state) (lambda (names vals) (list names vals)))))
+    (split_state state (lambda (vars vals) 
+                         (assign name val vars vals (lambda (vars vals)
+                                                      (merge_state vars vals (lambda (state) state))))))))
      
-(define assign
-  (lambda (name obj name_list obj_list return)
+(define assign ; TODO start here. take in split state, and assign value to variable, return new split state
+  (lambda (name val var_list val_list return)
     (cond
       ((or (null? name_list) (null? obj_list)) (error "Variable assignment before declaration\nassign_var: variable not yet initialized"))
       ((eq? name (car name_list)) (return name_list (cons obj (cdr obj_list))))
       (else (assign name obj (cdr name_list) (cdr obj_list) (lambda (names objs) (return (cons (car name_list) names) (cons (car obj_list) objs))))))))
 
-(define find_var
+(define find_var ; TODO
   (lambda (name state)
     (find name (car state) (cadr state) (lambda (val) val))))
 
-(define find
+(define find ; TODO
   (lambda (name var_list val_list return)
     (cond
       ((or (null? var_list) (null? val_list)) (error "Variable access before declaration\nfind_var: variable not yet declared"))
@@ -259,8 +260,6 @@
          ((eq? (car val_list) 'notDefined) (error "Variable access before assignment\nfind_var: variable not initialized"))
          (else (return (car val_list)))))
       (else (find name (cdr var_list) (cdr val_list) return)))))
-
-
 
 ; ====== M Value ======
 ; evaluate 
