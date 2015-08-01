@@ -184,7 +184,10 @@
 
 (define M_s_assign
   (lambda (arg arg_list state term return excep cont break)
-    (M_value (caddr arg) state (lambda (val state1) (M_state (car arg_list) (cdr arg_list) (assign_var (cadr arg) val state1) term return excep cont break)))))
+    (M_value (caddr arg) state (lambda (val state1) 
+                                 (cond
+                                   ((pair? arg_list) (M_state (car arg_list) (cdr arg_list) (assign_var (cadr arg) val state1) term return excep cont break))
+                                   (else (term (assign_var (cadr arg) val state1))))))))
 
 ;(if <condition> <then> <else>)
 ;(car cadr caddr cadddr)
@@ -229,7 +232,12 @@
 
 (define M_s_block
   (lambda (arg arg_list state term return excep cont break)
-    (error "M_s_block: not yet implemented")))
+    (M_state (cadr arg) (cddr arg) (add_layer (new_layer) state) (lambda (state1)
+                                                                   (M_state (car arg_list) (cdr arg_list) (remove_layer state1) term return excep cont break))
+             return
+             excep
+             cont
+             break)))
                                   
 
 ; === M_state utils ===
