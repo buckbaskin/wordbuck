@@ -247,7 +247,7 @@
                                                      (lambda (cont_state)
                                                        (M_s_while arg arg_list cont_state term return excep cont break))
                                                      (lambda (break_state)
-                                                       (M_state (car arg_list) (cdr arg_list) state term return excep cont break))))
+                                                       (M_state (car arg_list) (cdr arg_list) break_state term return excep cont break))))
                                  (else (M_state (car arg_list) (cdr arg_list) state term return excep cont break)))))))
 
 (define is_block?
@@ -260,12 +260,19 @@
 
 (define M_s_block
   (lambda (arg arg_list state term return excep cont break)
-    (M_state (cadr arg) (cddr arg) (add_layer (new_layer) state) (lambda (state1)
-                                                                   (M_state (car arg_list) (cdr arg_list) (remove_layer state1) term return excep cont break))
-             return
-             excep
-             cont
-             break)))
+    (M_state (cadr arg) (cddr arg) (add_layer (new_layer) state) 
+             (lambda (state1)
+               (cond
+                 ((pair? arg_list) (M_state (car arg_list) (cdr arg_list) (remove_layer state1) term return excep cont break))
+                 (else (term (remove_layer state1)))))
+             (lambda (ret_val state)
+               (return ret_val (remove_layer state)))
+             (lambda (exception state)
+               (excep exception (remove_layer state)))
+             (lambda (cont_state)
+               (cont (remove_layer cont_state)))
+             (lambda (break_state)
+               (break (remove_layer break_state))))))
                                   
 
 ; === M_state utils ===
@@ -459,8 +466,8 @@
   (lambda (arg state return)
     (cond
       ((null? arg) (error "M_bool: null arg"))
-      ((or (eq? #t arg) (eq? 'true arg)) (return #t))
-      ((or (eq? #f arg) (eq? 'false arg)) (return #f))
+      ((or (eq? #t arg) (eq? 'true arg)) (return #t state))
+      ((or (eq? #f arg) (eq? 'false arg)) (return #f state))
       (else (M_value arg state (lambda (v state) 
                                  (cond
                                    ((integer? v) (error "M_bool: condition evaluated to integer"))
