@@ -48,9 +48,9 @@
                        (cond
                          (debug (begin (display state)) (display "\n") (pretify val))
                          (else (pretify val)))) 
-                     (lambda (excep) (error "Code throws exception")) 
-                     (lambda (cont) (error "Code attempts to continue outside of loop"))
-                     (lambda (break) (error "Code attempts to break outside of loop")))))))
+                     (lambda (excep state) (error "Code throws exception")) 
+                     (lambda (cont_state) (error "Code attempts to continue outside of loop"))
+                     (lambda (break_state) (error "Code attempts to break outside of loop")))))))
 
 
 ; ====== START INTERPRETER BODY ======
@@ -141,6 +141,8 @@
       ((is_if? arg) (M_s_if arg arg_list state term return excep cont break))
       ((is_while? arg) (M_s_while arg arg_list state term return excep cont break))
       ((is_block? arg) (M_s_block arg arg_list state term return excep cont break))
+      ((is_break? arg) (M_s_break arg arg_list state term return excep cont break))
+      ((is_continue? arg) (M_s_continue arg arg_list state term return excep cont break))
       (else (display "\nstate\n") 
             (display state) 
             (display "\narg\n") 
@@ -189,6 +191,28 @@
                                    ((pair? arg_list) (M_state (car arg_list) (cdr arg_list) (assign_var (cadr arg) val state1) term return excep cont break))
                                    (else (term (assign_var (cadr arg) val state1))))))))
 
+(define is_continue?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((pair? arg) (eq? (car arg) 'continue))
+      (else #f))))
+
+(define M_s_continue
+  (lambda (arg arg_list state term return excep cont break)
+    (cont state)))
+
+(define is_break?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((pair? arg) (eq? (car arg) 'break))
+      (else #f))))
+
+(define M_s_break
+  (lambda (arg arg_list state term return excep cont break)
+    (break state)))
+
 ;(if <condition> <then> <else>)
 ;(car cadr caddr cadddr)
 (define is_if?
@@ -219,7 +243,11 @@
   (lambda (arg arg_list state term return excep cont break)
     (M_bool (cadr arg) state (lambda (condition state)
                                (cond
-                                 (condition (M_state (caddr arg) (cons arg arg_list) state term return excep cont break))
+                                 (condition (M_state (caddr arg) (cons arg arg_list) state term return excep 
+                                                     (lambda (cont_state)
+                                                       (M_s_while arg arg_list cont_state term return excep cont break))
+                                                     (lambda (break_state)
+                                                       (M_state (car arg_list) (cdr arg_list) state term return excep cont break))))
                                  (else (M_state (car arg_list) (cdr arg_list) state term return excep cont break)))))))
 
 (define is_block?
