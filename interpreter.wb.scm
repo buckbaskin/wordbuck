@@ -229,7 +229,8 @@
                                (cond
                                  (condition (M_state (caddr arg) arg_list state term return excep cont break))
                                  ((eq? (length arg) '4) (M_state (cadddr arg) arg_list state term return excep cont break))
-                                 (else (M_state (car arg_list) (cdr arg_list) state term return excep cont break)))))))
+                                 ((pair? arg_list) (M_state (car arg_list) (cdr arg_list) state term return excep cont break))
+                                 (else (term state)))))))
 
 (define is_while?
   (lambda (arg)
