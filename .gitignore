@@ -21,8 +21,7 @@ $RECYCLE.BIN/
 *.lnk
 
 # My Ignores
-parser_level1/
-parser_level2/
+parser_level*/
 
 # =========================
 # Operating System Files
