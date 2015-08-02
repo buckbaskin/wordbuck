@@ -3,26 +3,18 @@
 (define _test
   (lambda ()
     (cond
-      ((test_list '("parser_level1\\p1_test01.txt" "parser_level1\\p1_test02.txt" "parser_level1\\p1_test03.txt" "parser_level1\\p1_test04.txt" ; 4
-                                                   "parser_level1\\p1_test05.txt" "parser_level1\\p1_test06.txt" "parser_level1\\p1_test07.txt" ; 7
-                                                   "parser_level1\\p1_test08.txt" "parser_level1\\p1_test09.txt" "parser_level1\\p1_test10.txt" ; 10
-                                                   
-                                                   "parser_level1\\p1_test15.txt" "parser_level1\\p1_test16.txt" "parser_level1\\p1_test17.txt" ; 13
-                                                   "parser_level1\\p1_test18.txt" ; 14
-                                                   "parser_level1\\p1_test19.txt" "parser_level1\\p1_test20.txt" "parser_level1\\p1_test21.txt" ; 17
-                                                   "parser_level1\\p1_test22.txt" "parser_level1\\p1_test23.txt" "parser_level1\\p1_test24.txt" ; 20
-                                                   
-                                                   "parser_level2\\p2_test01.txt" "parser_level2\\p2_test02.txt" "parser_level2\\p2_test03.txt" ; 23
-                                                   "parser_level2\\p2_test04.txt" "parser_level2\\p2_test05.txt" "parser_level2\\p2_test06.txt" ; 26
-                                                   "parser_level2\\p2_test07.txt" "parser_level2\\p2_test11.txt" "parser_level2\\p2_test12.txt" ; 29
-                                                   "parser_level2\\p2_test13.txt") ; 30
-                  '(150 -4 10 16 220 ; 5
-                        5 6 10 5 -39 ; 10
-                        "Truth" 100 "Naht Truth" "Truth" 30 ; 15
-                        11 1106 12 16 72 ; 20
-                        100 20 6 -1 789 ; 25
-                        2 164 12 32 21 ; 30
-                        )
+      ((test_list '("parser_level3\\p3_test01.txt" "parser_level3\\p3_test02.txt" "parser_level3\\p3_test03.txt" "parser_level3\\p3_test04.txt" ; 4
+                                                   "parser_level3\\p3_test05.txt" "parser_level3\\p3_test06.txt" "parser_level3\\p3_test07.txt" ; 7
+                                                   "parser_level3\\p3_test08.txt" "parser_level3\\p3_test09.txt" "parser_level3\\p3_test10.txt" ; 10
+                                                   "parser_level3\\p3_test11.txt" #|test 12 returns param err |# "parser_level3\\p3_test13.txt" ; 12
+                                                   "parser_level3\\p3_test14.txt" "parser_level3\\p3_test15.txt" "parser_level3\\p3_test16.txt" ; 15
+                                                   #|test 17 returns scope err |# "parser_level3\\p3_test18.txt" "parser_level3\\p3_test19.txt" ; 17
+                                                   "parser_level3\\p3_test20.txt") ; 18
+                  '(10 14 45 55 1 ; 5
+                       115 "Truth" 20 24 2 ; 10
+                       35 #|12:err|# 90 69 87 ; 14
+                       64 #|17:err|# 3421 20332 21; 15
+                       )
                   '1) (begin
                         (display "All Tests passed\n")
                         #t))
