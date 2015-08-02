@@ -1,4 +1,5 @@
 (load "interpreter.wb.scm")
+(load "parser_level3/functionParser.scm")
 
 (define _test
   (lambda ()

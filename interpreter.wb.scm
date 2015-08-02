@@ -28,6 +28,10 @@
   (lambda (parsed-file)
     (process_arg_list parsed-file (new_state) #f)))
 
+(define interpret2
+  (lambda (parsed-file)
+    (m_expr_test parsed-file (new_state) #f)))
+
 (define _run-interpreter
   (lambda (raw-file)
     (interpret (parser raw-file))))
@@ -38,11 +42,31 @@
       (debug (interpret-debug (parser file)))
       (else (interpret (parser file))))))
 
+(define _i2
+  (lambda (file debug)
+    (cond
+      (debug (interpret2 (parser file)))
+      (else (interpret2 (parser file))))))
+
 (define process_arg_list
   (lambda (l state debug)
     (cond
       ((null? l) (error "Null input to interpreter."))
-      (else (M_state (car l) (cdr l) state 
+      (else (M_expr (car l) (cdr l) state 
+                     (lambda (state) (error "code did not return")) 
+                     (lambda (val state)
+                       (cond
+                         (debug (begin (display state)) (display "\n") (pretify val))
+                         (else (pretify val)))) 
+                     (lambda (excep state) (error "Code throws exception")) 
+                     (lambda (cont_state) (error "Code attempts to continue outside of loop"))
+                     (lambda (break_state) (error "Code attempts to break outside of loop")))))))
+
+(define m_expr_test
+  (lambda (l state debug)
+    (cond
+      ((null? l) (error "Null input to m_expr_test interpreter."))
+      (else (M_expr (car l) (cdr l) state 
                      (lambda (state) (error "code did not return")) 
                      (lambda (val state)
                        (cond
@@ -114,14 +138,17 @@
       ((eq? value #f) "Naht Truth")
       (else value))))
 
+; ====== M state ======
+; defines the state transition for the code
+
 ; ====== M Class ======
 ; return the state given a class definition
 
 ; ====== M Func ======
 ; return the state, value of the function execution
 
-; ====== M State ======
-; returns the state modified by the given code
+; ====== M Expression ======
+; returns the state modified by the given expression (line[ish] of code)
 ; This is for use within functions, etc
 ; Continuations: 
 ; term - called at the end of the evaluation if nothing else occurs (term state)
@@ -130,11 +157,11 @@
 ; cont - called in loop to return to top (cont state)
 ; break - called in loop to exit loop (break state)
 
-(define M_state
+(define M_expr
   (lambda (arg arg_list state term return excep cont break)
     (cond
-      ((null? arg) (error "M_state: argument is null"))
-      ((not (is_valid_state? state)) (error "M_state: invalid state"))
+      ((null? arg) (error "M_expr: argument is null"))
+      ((not (is_valid_state? state)) (error "M_expr: invalid state"))
       ((is_return? arg) (M_s_return arg arg_list state term return excep cont break))
       ((is_declare? arg) (M_s_declare arg arg_list state term return excep cont break))
       ((is_assign? arg) (M_s_assign arg arg_list state term return excep cont break))
@@ -148,7 +175,7 @@
             (display "\narg\n") 
             (display arg)
             (display "\n") 
-            (error "^ The above part of M_state is not defined")))))
+            (error "^ The above part of M_expr is not defined")))))
 
 ; === M state pieces ===
 
@@ -174,7 +201,7 @@
 (define M_s_declare
   (lambda (arg arg_list state term return excep cont break)
     (cond
-      ((eq? (length arg) 2) (M_state (car arg_list) (cdr arg_list) (create_var (cadr arg) state) term return excep cont break))
+      ((eq? (length arg) 2) (M_expr (car arg_list) (cdr arg_list) (create_var (cadr arg) state) term return excep cont break))
       (else (M_s_assign (list '= (cadr arg) (caddr arg)) arg_list (create_var (cadr arg) state) term return excep cont break)))))
 
 (define is_assign?
@@ -188,7 +215,7 @@
   (lambda (arg arg_list state term return excep cont break)
     (M_value (caddr arg) state (lambda (val state1) 
                                  (cond
-                                   ((pair? arg_list) (M_state (car arg_list) (cdr arg_list) (assign_var (cadr arg) val state1) term return excep cont break))
+                                   ((pair? arg_list) (M_expr (car arg_list) (cdr arg_list) (assign_var (cadr arg) val state1) term return excep cont break))
                                    (else (term (assign_var (cadr arg) val state1))))))))
 
 (define is_continue?
@@ -227,9 +254,9 @@
   (lambda (arg arg_list state term return excep cont break)
     (M_bool (cadr arg) state (lambda (condition state)
                                (cond
-                                 (condition (M_state (caddr arg) arg_list state term return excep cont break))
-                                 ((eq? (length arg) '4) (M_state (cadddr arg) arg_list state term return excep cont break))
-                                 ((pair? arg_list) (M_state (car arg_list) (cdr arg_list) state term return excep cont break))
+                                 (condition (M_expr (caddr arg) arg_list state term return excep cont break))
+                                 ((eq? (length arg) '4) (M_expr (cadddr arg) arg_list state term return excep cont break))
+                                 ((pair? arg_list) (M_expr (car arg_list) (cdr arg_list) state term return excep cont break))
                                  (else (term state)))))))
 
 (define is_while?
@@ -244,12 +271,12 @@
   (lambda (arg arg_list state term return excep cont break)
     (M_bool (cadr arg) state (lambda (condition state)
                                (cond
-                                 (condition (M_state (caddr arg) (cons arg arg_list) state term return excep 
+                                 (condition (M_expr (caddr arg) (cons arg arg_list) state term return excep 
                                                      (lambda (cont_state)
                                                        (M_s_while arg arg_list cont_state term return excep cont break))
                                                      (lambda (break_state)
-                                                       (M_state (car arg_list) (cdr arg_list) break_state term return excep cont break))))
-                                 (else (M_state (car arg_list) (cdr arg_list) state term return excep cont break)))))))
+                                                       (M_expr (car arg_list) (cdr arg_list) break_state term return excep cont break))))
+                                 (else (M_expr (car arg_list) (cdr arg_list) state term return excep cont break)))))))
 
 (define is_block?
   (lambda (arg)
@@ -261,10 +288,10 @@
 
 (define M_s_block
   (lambda (arg arg_list state term return excep cont break)
-    (M_state (cadr arg) (cddr arg) (add_layer (new_layer) state) 
+    (M_expr (cadr arg) (cddr arg) (add_layer (new_layer) state) 
              (lambda (state1)
                (cond
-                 ((pair? arg_list) (M_state (car arg_list) (cdr arg_list) (remove_layer state1) term return excep cont break))
+                 ((pair? arg_list) (M_expr (car arg_list) (cdr arg_list) (remove_layer state1) term return excep cont break))
                  (else (term (remove_layer state1)))))
              (lambda (ret_val state)
                (return ret_val (remove_layer state)))
@@ -276,7 +303,7 @@
                (break (remove_layer break_state))))))
                                   
 
-; === M_state utils ===
+; === M_expr utils ===
       
 (define create_var
   (lambda (name state)
@@ -480,4 +507,10 @@
   (lambda ()
     (begin
       (load "interpreter.test3.wb.scm")
+      (_test))))
+
+(define test2
+  (lambda ()
+    (begin
+      (load "interpreter.test2.wb.scm")
       (_test))))

@@ -1,4 +1,5 @@
 (load "interpreter.wb.scm")
+(load "parser_level2/simpleParser.scm")
 
 (define _test
   (lambda ()
@@ -42,4 +43,4 @@
 
 (define test_one
   (lambda (file expected_value)
-    (eq? (_i file #f) expected_value)))
+    (eq? (_i2 file #f) expected_value)))
