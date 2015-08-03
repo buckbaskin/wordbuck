@@ -197,16 +197,32 @@
 (define func_to_def
   (lambda (arg state return)
     (make_closure state (lambda (closure)
-                          (return (list 'function (cddr arg) closure))))))
+                          (return (list 'function (caddr arg) (cadddr arg) closure))))))
 
 (define funcall
   (lambda (name arguments state term return excep cont break)
-    (error "funcall: not yet implemented")))
+    (fc_h (cadr (find_var name state)) arguments (cadddr (find_var name state)) (caddr (find_var name state)) state term return excep cont break)))
+
+(define fc_h
+  (lambda (arg_vars arg_vals closure arg_list state term return excep cont break)
+    (bind_args arg_vars arg_vals (operate_closure closure state) 
+               (lambda (state1) ; once the args are bound
+                 (M_expr (car arg_list) (cdr arg_list) state1 term return excep cont break)))))
     
 (define make_closure ; TODO(buckbaskin): fix, can't quite remember what it needs to be
   (lambda (state return)
     (return (lambda ()
               state))))
+
+(define operate_closure
+  (lambda (closure state)
+    (closure state)))
+
+(define caddddr
+  (lambda (arg)
+    (begin
+      (display arg)
+      (car (cdr (cdddr arg))))))
     
 ; ====== M Expression ======
 ; returns the state modified by the given expression (line[ish] of code)
