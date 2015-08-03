@@ -211,12 +211,21 @@
     
 (define make_closure ; TODO(buckbaskin): fix, can't quite remember what it needs to be
   (lambda (state return)
-    (return (lambda ()
+    (return (lambda (current_state)
               state))))
 
 (define operate_closure
   (lambda (closure state)
     (closure state)))
+
+(define bind_args
+  (lambda (arg_vars arg_vals state return)
+    (cond
+      ((not (and (list? arg_vars) (list? arg_vals))) (error "bind_args: improperly formatted lists"))
+      ((not (eq? (length arg_vars) (length arg_vals))) (error "bing_args: length arg_vars does not equal arg_vals"))
+      ; note: pass by reference here is just passing in the variable name instead of the M_value below
+      (else (M_value (car arg_vals) state (lambda (val state1) 
+                                            (return (bind_args (cdr arg_vars) (cdr arg_vals) (assign_var (car arg_vars) val (create_var (car arg_vars) state1))))))))))
 
 (define caddddr
   (lambda (arg)
