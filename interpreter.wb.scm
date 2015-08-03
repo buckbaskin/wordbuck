@@ -22,11 +22,21 @@
       (display "parsed file \n")
       (display parsed-file)
       (display "\ninterpreter out:\n")
-      (process_arg_list parsed-file (new_state) #t))))
+      (m_func_read parsed-file (new_state) #t (lambda (state) state)))))
 
 (define interpret
   (lambda (parsed-file)
-    (process_arg_list parsed-file (new_state) #f)))
+    (m_func_read parsed-file (new_state) #f (lambda (state) 
+                                              ; (arg arg_list state term return excep cont break)
+                                              (M_f_call '(funcall main) '() state
+                                                        (lambda (state) (error "main() code did not return")) 
+                                                        (lambda (val state)
+                                                          (cond
+                                                            (debug (begin (display state)) (display "\n") (pretify val))
+                                                            (else (pretify val)))) 
+                                                        (lambda (excep state) (error "main() code throws exception")) 
+                                                        (lambda (cont_state) (error "main() code attempts to continue outside of loop"))
+                                                        (lambda (break_state) (error "main() code attempts to break outside of loop")))))))
 
 (define interpret2
   (lambda (parsed-file)
@@ -48,19 +58,17 @@
       (debug (interpret2 (parser file)))
       (else (interpret2 (parser file))))))
 
-(define process_arg_list
-  (lambda (l state debug)
+(define m_func_read
+  (lambda (l state debug return)
     (cond
-      ((null? l) (error "Null input to interpreter."))
-      (else (M_expr (car l) (cdr l) state 
-                     (lambda (state) (error "code did not return")) 
-                     (lambda (val state)
-                       (cond
-                         (debug (begin (display state)) (display "\n") (pretify val))
-                         (else (pretify val)))) 
-                     (lambda (excep state) (error "Code throws exception")) 
-                     (lambda (cont_state) (error "Code attempts to continue outside of loop"))
-                     (lambda (break_state) (error "Code attempts to break outside of loop")))))))
+      ((null? l) (return state))
+      ;             (arg arg_list state term return excep cont break)
+      (else (M_func (car l) (cdr l) state
+                    (lambda (state) (return state)) 
+                    (lambda (val state) (error "m_func_read: Code attempted to return a value"))
+                    (lambda (excep state) (error "m_func read: Code throws exception")) 
+                    (lambda (cont_state) (error "m_func read: Code attempts to continue outside of loop"))
+                    (lambda (break_state) (error "m_func read: Code attempts to break outside of loop")))))))
 
 (define m_expr_test
   (lambda (l state debug)
@@ -155,6 +163,7 @@
       ((not (is_valid_state? state)) (error "M_func: invalid state"))
       ((is_declare? arg) (M_e_declare arg arg_list state term return excep cont break))
       ((is_assign? arg) (M_e_assign arg arg_list state term return excep cont break))
+      ((is_func_def? arg) (M_f_def arg arg_list state term return excep cont break))
       (else (display "\nstate\n") 
             (display state) 
             (display "\narg\n") 
@@ -173,17 +182,26 @@
 
 (define M_f_def
   (lambda (arg arg_list state term return excep cont break)
-    (cond
-      (func_to_def arg state (lambda (f_def)
+    (func_to_def arg state (lambda (f_def)
                                (cond
                                  ((pair? arg_list) (M_expr (car arg_list) (cdr arg_list) (assign_var (cadr arg) f_def state) term return excep cont break))
-                                 (else (term (assign_var (cadr arg) f_def state)))))))))
+                                 (else (term (assign_var (cadr arg) f_def (create_var (cadr arg) state)))))))))
+
+(define M_f_call
+  (lambda (arg arg_list state term return excep cont break)
+    (funcall (cadr arg) (cdr arg) state term return excep
+             (lambda (cont_state) (error "Can't call continue inside a function"))
+             (lambda (break_state) (error "Can't call break inside a function")))))
 
 ; === M func utilities ===
 (define func_to_def
   (lambda (arg state return)
     (make_closure state (lambda (closure)
                           (return (list 'function (cddr arg) closure))))))
+
+(define funcall
+  (lambda (name arguments state term return excep cont break)
+    (error "funcall: not yet implemented")))
     
 (define make_closure ; TODO(buckbaskin): fix, can't quite remember what it needs to be
   (lambda (state return)
