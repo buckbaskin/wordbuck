@@ -20,6 +20,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# My Ignores
+parser_level*/
+
 # =========================
 # Operating System Files
 # =========================
@@ -44,3 +47,4 @@ $RECYCLE.BIN/
 Network Trash Folder
 Temporary Items
 .apdisk
+*.1
