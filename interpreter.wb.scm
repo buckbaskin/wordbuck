@@ -194,7 +194,10 @@
 
 (define M_f_call
   (lambda (arg arg_list state term return excep cont break)
-    (funcall (cadr arg) (cddr arg) state term return excep
+    (funcall (cadr arg) (cddr arg) (add_layer (new_layer) state) 
+             (lambda (term_state) (term (remove_layer term_state)))
+             (lambda (val state) (return val (remove_layer state)))
+             (lambda (exception state) (excep exception (remove_layer state)))
              (lambda (cont_state) (error "Can't call continue inside a function"))
              (lambda (break_state) (error "Can't call break inside a function")))))
 
@@ -223,7 +226,7 @@
   (lambda (closure state)
     (closure state)))
 
-(define bind_args ; TODO adjust bind args to get M
+(define bind_args
   (lambda (arg_vars arg_vals val_state f_state return excep)
     (cond
       ((not (and (list? arg_vars) (list? arg_vals))) (error "bind_args: improperly formatted lists"))
@@ -571,10 +574,10 @@
 
 (define M_v_funcall
   (lambda (arg state return excep)
-    (funcall (cadr arg) (cddr arg) state 
+    (funcall (cadr arg) (cddr arg) (add_layer (new_layer) state) 
              (lambda (term_state) (error "function as expression did not return a value"))
-             return 
-             excep
+             (lambda (val state) (return val (remove_layer state)))
+             (lambda (exception state) (excep exception (remove_layer state)))
              (lambda (cont_state) (error "Can't call continue inside a function"))
              (lambda (break_state) (error "Can't call break inside a function")))))
 
