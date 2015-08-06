@@ -31,9 +31,7 @@
                                               (M_f_call '(funcall main) '() state
                                                         (lambda (state) (error "main() code did not return")) 
                                                         (lambda (val state)
-                                                          (cond
-                                                            (debug (begin (display state)) (display "\n") (pretify val))
-                                                            (else (pretify val)))) 
+                                                          (pretify val))
                                                         (lambda (excep state) (error "main() code throws exception")) 
                                                         (lambda (cont_state) (error "main() code attempts to continue outside of loop"))
                                                         (lambda (break_state) (error "main() code attempts to break outside of loop")))))))
@@ -189,15 +187,15 @@
 
 (define M_f_call
   (lambda (arg arg_list state term return excep cont break)
-    (funcall (cadr arg) (cdr arg) state term return excep
+    (funcall (cadr arg) (cddr arg) state term return excep
              (lambda (cont_state) (error "Can't call continue inside a function"))
              (lambda (break_state) (error "Can't call break inside a function")))))
 
 ; === M func utilities ===
 (define func_to_def
   (lambda (arg state return)
-    (make_closure state (lambda (closure)
-                          (return (list 'function (caddr arg) (cadddr arg) closure))))))
+    (make_closure (cadr arg) state (lambda (closure)
+                                     (return (list 'function (caddr arg) (cadddr arg) closure))))))
 
 (define funcall
   (lambda (name arguments state term return excep cont break)
@@ -210,9 +208,9 @@
                  (M_expr (car arg_list) (cdr arg_list) state1 term return excep cont break)))))
     
 (define make_closure ; TODO(buckbaskin): fix, can't quite remember what it needs to be
-  (lambda (state return)
+  (lambda (f_name state return)
     (return (lambda (current_state)
-              state))))
+              (assign_var f_name (find_var f_name current_state) (create_var f_name state))))))
 
 (define operate_closure
   (lambda (closure state)
@@ -222,7 +220,8 @@
   (lambda (arg_vars arg_vals state return)
     (cond
       ((not (and (list? arg_vars) (list? arg_vals))) (error "bind_args: improperly formatted lists"))
-      ((not (eq? (length arg_vars) (length arg_vals))) (error "bing_args: length arg_vars does not equal arg_vals"))
+      ((not (eq? (length arg_vars) (length arg_vals))) (error "bind_args: length arg_vars does not equal arg_vals"))
+      ((and (null? arg_vars) (null? arg_vals)) (return state))
       ; note: pass by reference here is just passing in the variable name instead of the M_value below
       (else (M_value (car arg_vals) state (lambda (val state1) 
                                             (return (bind_args (cdr arg_vars) (cdr arg_vals) (assign_var (car arg_vars) val (create_var (car arg_vars) state1))))))))))
