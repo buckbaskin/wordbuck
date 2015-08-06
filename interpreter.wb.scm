@@ -210,9 +210,9 @@
 
 (define fc_h
   (lambda (arg_vars arg_vals closure arg_list state term return excep cont break)
-    (bind_args arg_vars arg_vals state
+    (bind_args arg_vars arg_vals state (operate_closure closure state)
                (lambda (state1) ; once the args are bound
-                 (M_expr (car arg_list) (cdr arg_list) (operate_closure closure state1) term return excep cont break)) excep)))
+                 (M_expr (car arg_list) (cdr arg_list) state1 term return excep cont break)) excep)))
     
 (define make_closure
   (lambda (f_name state return)
@@ -223,20 +223,21 @@
   (lambda (closure state)
     (closure state)))
 
-(define bind_args
-  (lambda (arg_vars arg_vals state return excep)
+(define bind_args ; TODO adjust bind args to get M
+  (lambda (arg_vars arg_vals val_state f_state return excep)
     (cond
       ((not (and (list? arg_vars) (list? arg_vals))) (error "bind_args: improperly formatted lists"))
       ((not (eq? (length arg_vars) (length arg_vals))) (error "bind_args: length arg_vars does not equal arg_vals"))
-      ((and (null? arg_vars) (null? arg_vals)) (return state))
+      ((and (null? arg_vars) (null? arg_vals)) (return f_state))
       ; note: pass by reference here is just passing in the variable name instead of the M_value below
-      (else (M_value (car arg_vals) state (lambda (val state1) 
-                                            (return (bind_args (cdr arg_vars) 
-                                                               (cdr arg_vals) 
-                                                               state1 
-                                                               (lambda (state2)
-                                                                 (assign_var (car arg_vars) val (create_var (car arg_vars) state1))) 
-                                                               excep)))
+      (else (M_value (car arg_vals) val_state (lambda (val state1) 
+                                                (return (bind_args (cdr arg_vars) 
+                                                                   (cdr arg_vals) 
+                                                                   state1 
+                                                                   f_state
+                                                                   (lambda (state2)
+                                                                     (assign_var (car arg_vars) val (create_var (car arg_vars) state1))) 
+                                                                   excep)))
                      excep)))))
 
 (define caddddr
