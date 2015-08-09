@@ -244,7 +244,7 @@
                                                                    state1 
                                                                    f_state
                                                                    (lambda (state2)
-                                                                     (assign_var (car arg_vars) val (create_var (car arg_vars) state1))) 
+                                                                     (assign_var (car arg_vars) val (create_var (car arg_vars) state2))) 
                                                                    excep)))
                      excep)))))
 
