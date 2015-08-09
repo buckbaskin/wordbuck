@@ -209,7 +209,12 @@
 
 (define funcall
   (lambda (name arguments state term return excep cont break)
-    (fc_h (cadr (find_var name state)) arguments (cadddr (find_var name state)) (caddr (find_var name state)) state term return excep cont break)))
+    (fc_h (cadr (find_var name state)) arguments (cadddr (find_var name state)) (caddr (find_var name state)) state 
+          (lambda (state)
+            (term state))
+          (lambda (val state)
+            (return val state))
+          excep cont break)))
 
 (define fc_h
   (lambda (arg_vars arg_vals closure arg_list state term return excep cont break)
@@ -422,7 +427,7 @@
 (define create ; helper to create_var
   (lambda (name var_list val_list return)
     (merge_state (cons (cons name (car var_list)) (cdr var_list))
-                 (cons (cons name (car val_list)) (cdr val_list))
+                 (cons (cons 'notDefined (car val_list)) (cdr val_list))
                  (lambda (state) (return state)))))
 
 (define unique?
