@@ -21,18 +21,8 @@
     (begin
       (display "parsed file \n")
       (display parsed-file)
-      (m_func_read parsed-file (new_state) #t (lambda (state) 
-                                              ; (arg arg_list state term return excep cont break)
-                                              (M_f_call '(funcall main) '() state
-                                                        (lambda (state) (error "main() code did not return")) 
-                                                        (lambda (val state)
-                                                          (begin (display "\nstate:\n")
-                                                                 (display state)
-                                                                 (display "\ninterpreter out:\n")
-                                                                 (pretify val)))
-                                                        (lambda (excep state) (error "main() code throws exception")) 
-                                                        (lambda (cont_state) (error "main() code attempts to continue outside of loop"))
-                                                        (lambda (break_state) (error "main() code attempts to break outside of loop"))))))))
+      (display "\ninterpreter out:\n")
+      (m_func_read parsed-file (new_state) #t (lambda (state) state)))))
 
 (define interpret
   (lambda (parsed-file)
@@ -223,7 +213,7 @@
 
 (define fc_h
   (lambda (arg_vars arg_vals closure arg_list state term return excep cont break)
-    (bind_args arg_vars arg_vals state (operate_closure closure state) ; Operate closure is creating the right state for function execution, but this is not the right state to return
+    (bind_args arg_vars arg_vals state (operate_closure closure state)
                (lambda (state1) ; once the args are bound
                  (M_expr (car arg_list) (cdr arg_list) state1 term return excep cont break)) excep)))
     
@@ -243,14 +233,14 @@
       ((not (eq? (length arg_vars) (length arg_vals))) (error "bind_args: length arg_vars does not equal arg_vals"))
       ((and (null? arg_vars) (null? arg_vals)) (return f_state))
       ; note: pass by reference here is just passing in the variable name instead of the M_value below
-      (else (M_value (car arg_vals) val_state (lambda (val state1)
-                                                (bind_args (cdr arg_vars) 
-                                                           (cdr arg_vals) 
-                                                           state1
-                                                           f_state
-                                                           (lambda (state2)
-                                                             (return (assign_var (car arg_vars) val (create_var (car arg_vars) state2))))
-                                                           excep))
+      (else (M_value (car arg_vals) val_state (lambda (val state1) 
+                                                (return (bind_args (cdr arg_vars) 
+                                                                   (cdr arg_vals) 
+                                                                   state1 
+                                                                   f_state
+                                                                   (lambda (state2)
+                                                                     (assign_var (car arg_vars) val (create_var (car arg_vars) state1))) 
+                                                                   excep)))
                      excep)))))
 
 (define caddddr
@@ -432,7 +422,7 @@
 (define create ; helper to create_var
   (lambda (name var_list val_list return)
     (merge_state (cons (cons name (car var_list)) (cdr var_list))
-                 (cons (cons 'notDefined (car val_list)) (cdr val_list))
+                 (cons (cons name (car val_list)) (cdr val_list))
                  (lambda (state) (return state)))))
 
 (define unique?
@@ -449,13 +439,13 @@
 (define assign_var ; method is the programmer facing. Splits state, and then rebuilds state
   (lambda (name val state)
     (split_state state (lambda (vars vals) 
-                         (assign name val vars vals (lambda (vars2 vals2)
-                                                      (merge_state vars2 vals2 (lambda (state) state))))))))
+                         (assign name val vars vals (lambda (vars vals)
+                                                      (merge_state vars vals (lambda (state) state))))))))
      
 (define assign
   (lambda (name val var_list val_list return)
     (cond
-      ((or (null? var_list) (null? val_list)) (display "\nvar list\n") (display var_list) (display "\n") (error "Variable assignment before declaration\nassign: variable not yet initialized"))
+      ((or (null? var_list) (null? val_list)) (error "Variable assignment before declaration\nassign: variable not yet initialized"))
       ((or (not (list? var_list)) (not (list? val_list))) (error "assign: Malformed var or val list"))
       ((not (and (list? (car var_list)) (list? (car val_list)))) (error "assign: Malformed var or val list (element not a list)"))
       (else (try_assign_layer name val (car var_list) (car val_list) (lambda (set vars vals) ; returned from setting in layer
