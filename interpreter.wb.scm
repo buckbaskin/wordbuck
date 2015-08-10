@@ -210,10 +210,10 @@
 (define funcall
   (lambda (name arguments state term return excep cont break)
     (fc_h (cadr (find_var name state)) arguments (cadddr (find_var name state)) (caddr (find_var name state)) state 
-          (lambda (state)
-            (term state))
-          (lambda (val state)
-            (return val state))
+          (lambda (state1)
+            (term state1))
+          (lambda (val state2)
+            (return val state2))
           excep cont break)))
 
 (define fc_h
@@ -450,7 +450,7 @@
 (define assign
   (lambda (name val var_list val_list return)
     (cond
-      ((or (null? var_list) (null? val_list)) (error "Variable assignment before declaration\nassign: variable not yet initialized"))
+      ((or (null? var_list) (null? val_list)) (display name) (error "Variable assignment before declaration\nassign: variable not yet initialized"))
       ((or (not (list? var_list)) (not (list? val_list))) (error "assign: Malformed var or val list"))
       ((not (and (list? (car var_list)) (list? (car val_list)))) (error "assign: Malformed var or val list (element not a list)"))
       (else (try_assign_layer name val (car var_list) (car val_list) (lambda (set vars vals) ; returned from setting in layer
@@ -478,7 +478,7 @@
 (define find ; helper to find_var
   (lambda (name var_list val_list return)
     (cond
-      ((or (null? var_list) (null? val_list)) (error "Variable access before declaration\nfind_var: variable not yet declared"))
+      ((or (null? var_list) (null? val_list)) (display name) (error "Variable access before declaration\nfind_var: variable not yet declared"))
       (else (try_find_layer name (car var_list) (car val_list) (lambda (found value)
                                                                  (cond
                                                                    (found (return value))
