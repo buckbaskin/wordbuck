@@ -31,9 +31,7 @@
                                               (M_f_call '(funcall main) '() state
                                                         (lambda (state) (error "main() code did not return")) 
                                                         (lambda (val state)
-                                                          (cond
-                                                            (debug (begin (display state)) (display "\n") (pretify val))
-                                                            (else (pretify val)))) 
+                                                          (pretify val))
                                                         (lambda (excep state) (error "main() code throws exception")) 
                                                         (lambda (cont_state) (error "main() code attempts to continue outside of loop"))
                                                         (lambda (break_state) (error "main() code attempts to break outside of loop")))))))
@@ -184,48 +182,71 @@
   (lambda (arg arg_list state term return excep cont break)
     (func_to_def arg state (lambda (f_def)
                                (cond
-                                 ((pair? arg_list) (M_expr (car arg_list) (cdr arg_list) (assign_var (cadr arg) f_def state) term return excep cont break))
+                                 ((pair? arg_list) (M_expr (car arg_list) (cdr arg_list) (assign_var (cadr arg) f_def (create_var (cadr arg) state)) term return excep cont break))
                                  (else (term (assign_var (cadr arg) f_def (create_var (cadr arg) state)))))))))
+
+(define is_func_call?
+  (lambda (arg)
+    (cond
+      ((null? arg) #f)
+      ((not (list? arg)) #f)
+      (else (and (>= (length arg) '2) (eq? (car arg) 'funcall))))))
 
 (define M_f_call
   (lambda (arg arg_list state term return excep cont break)
-    (funcall (cadr arg) (cdr arg) state term return excep
+    (funcall (cadr arg) (cddr arg) (add_layer (new_layer) state) 
+             (lambda (term_state) (term (remove_layer term_state)))
+             (lambda (val state) (return val (remove_layer state)))
+             (lambda (exception state) (excep exception (remove_layer state)))
              (lambda (cont_state) (error "Can't call continue inside a function"))
              (lambda (break_state) (error "Can't call break inside a function")))))
 
 ; === M func utilities ===
 (define func_to_def
   (lambda (arg state return)
-    (make_closure state (lambda (closure)
-                          (return (list 'function (caddr arg) (cadddr arg) closure))))))
+    (make_closure (cadr arg) state (lambda (closure)
+                                     (return (list 'function (caddr arg) (cadddr arg) closure))))))
 
 (define funcall
   (lambda (name arguments state term return excep cont break)
-    (fc_h (cadr (find_var name state)) arguments (cadddr (find_var name state)) (caddr (find_var name state)) state term return excep cont break)))
+    (fc_h (cadr (find_var name state)) arguments (cadddr (find_var name state)) (caddr (find_var name state)) state 
+          (lambda (state1)
+            (term state1))
+          (lambda (val state2)
+            (return val state2))
+          excep cont break)))
 
 (define fc_h
   (lambda (arg_vars arg_vals closure arg_list state term return excep cont break)
-    (bind_args arg_vars arg_vals (operate_closure closure state) 
+    (bind_args arg_vars arg_vals state (operate_closure closure state)
                (lambda (state1) ; once the args are bound
-                 (M_expr (car arg_list) (cdr arg_list) state1 term return excep cont break)))))
+                 (M_expr (car arg_list) (cdr arg_list) state1 term return excep cont break)) excep)))
     
-(define make_closure ; TODO(buckbaskin): fix, can't quite remember what it needs to be
-  (lambda (state return)
+(define make_closure
+  (lambda (f_name state return)
     (return (lambda (current_state)
-              state))))
+              (assign_var f_name (find_var f_name current_state) (create_var f_name state))))))
 
 (define operate_closure
   (lambda (closure state)
     (closure state)))
 
 (define bind_args
-  (lambda (arg_vars arg_vals state return)
+  (lambda (arg_vars arg_vals val_state f_state return excep)
     (cond
       ((not (and (list? arg_vars) (list? arg_vals))) (error "bind_args: improperly formatted lists"))
-      ((not (eq? (length arg_vars) (length arg_vals))) (error "bing_args: length arg_vars does not equal arg_vals"))
+      ((not (eq? (length arg_vars) (length arg_vals))) (error "bind_args: length arg_vars does not equal arg_vals"))
+      ((and (null? arg_vars) (null? arg_vals)) (return f_state))
       ; note: pass by reference here is just passing in the variable name instead of the M_value below
-      (else (M_value (car arg_vals) state (lambda (val state1) 
-                                            (return (bind_args (cdr arg_vars) (cdr arg_vals) (assign_var (car arg_vars) val (create_var (car arg_vars) state1))))))))))
+      (else (M_value (car arg_vals) val_state (lambda (val state1) 
+                                                (return (bind_args (cdr arg_vars) 
+                                                                   (cdr arg_vals) 
+                                                                   state1 
+                                                                   f_state
+                                                                   (lambda (state2)
+                                                                     (assign_var (car arg_vars) val (create_var (car arg_vars) state2))) 
+                                                                   excep)))
+                     excep)))))
 
 (define caddddr
   (lambda (arg)
@@ -257,6 +278,7 @@
       ((is_break? arg) (M_e_break arg arg_list state term return excep cont break))
       ((is_continue? arg) (M_e_continue arg arg_list state term return excep cont break))
       ((is_func_def? arg) (M_f_def arg arg_list state term return excep cont break))
+      ((is_func_call? arg) (M_f_call arg arg_list state term return excep cont break))
       (else (display "\nstate\n") 
             (display state) 
             (display "\narg\n") 
@@ -275,7 +297,7 @@
 
 (define M_e_return
   (lambda (arg arg_list state term return excep cont break)
-    (M_value (cadr arg) state (lambda (val state) (return val state)))))
+    (M_value (cadr arg) state (lambda (val state) (return val state)) excep)))
 
 (define is_declare?
   (lambda (arg)
@@ -303,7 +325,8 @@
     (M_value (caddr arg) state (lambda (val state1) 
                                  (cond
                                    ((pair? arg_list) (M_expr (car arg_list) (cdr arg_list) (assign_var (cadr arg) val state1) term return excep cont break))
-                                   (else (term (assign_var (cadr arg) val state1))))))))
+                                   (else (term (assign_var (cadr arg) val state1)))))
+             excep)))
 
 (define is_continue?
   (lambda (arg)
@@ -344,7 +367,8 @@
                                  (condition (M_expr (caddr arg) arg_list state term return excep cont break))
                                  ((eq? (length arg) '4) (M_expr (cadddr arg) arg_list state term return excep cont break))
                                  ((pair? arg_list) (M_expr (car arg_list) (cdr arg_list) state term return excep cont break))
-                                 (else (term state)))))))
+                                 (else (term state)))) 
+            excep)))
 
 (define is_while?
   (lambda (arg)
@@ -363,7 +387,8 @@
                                                        (M_e_while arg arg_list cont_state term return excep cont break))
                                                      (lambda (break_state)
                                                        (M_expr (car arg_list) (cdr arg_list) break_state term return excep cont break))))
-                                 (else (M_expr (car arg_list) (cdr arg_list) state term return excep cont break)))))))
+                                 (else (M_expr (car arg_list) (cdr arg_list) state term return excep cont break))))
+            excep)))
 
 (define is_block?
   (lambda (arg)
@@ -402,7 +427,7 @@
 (define create ; helper to create_var
   (lambda (name var_list val_list return)
     (merge_state (cons (cons name (car var_list)) (cdr var_list))
-                 (cons (cons name (car val_list)) (cdr val_list))
+                 (cons (cons 'notDefined (car val_list)) (cdr val_list))
                  (lambda (state) (return state)))))
 
 (define unique?
@@ -425,7 +450,7 @@
 (define assign
   (lambda (name val var_list val_list return)
     (cond
-      ((or (null? var_list) (null? val_list)) (error "Variable assignment before declaration\nassign: variable not yet initialized"))
+      ((or (null? var_list) (null? val_list)) (display name) (error "Variable assignment before declaration\nassign: variable not yet initialized"))
       ((or (not (list? var_list)) (not (list? val_list))) (error "assign: Malformed var or val list"))
       ((not (and (list? (car var_list)) (list? (car val_list)))) (error "assign: Malformed var or val list (element not a list)"))
       (else (try_assign_layer name val (car var_list) (car val_list) (lambda (set vars vals) ; returned from setting in layer
@@ -453,7 +478,7 @@
 (define find ; helper to find_var
   (lambda (name var_list val_list return)
     (cond
-      ((or (null? var_list) (null? val_list)) (error "Variable access before declaration\nfind_var: variable not yet declared"))
+      ((or (null? var_list) (null? val_list)) (display name) (error "Variable access before declaration\nfind_var: variable not yet declared"))
       (else (try_find_layer name (car var_list) (car val_list) (lambda (found value)
                                                                  (cond
                                                                    (found (return value))
@@ -469,16 +494,17 @@
 ; ====== M Value ======
 ; evaluate 
 (define M_value
-  (lambda (arg state return) ; Note: return takes (value state)
+  (lambda (arg state return excep) ; Note: return takes (value state)
     (cond
       ((null? arg) (error "M_value: null arg"))
       ((integer? arg) (return arg state))
-      ((is_math? arg) (M_v_math arg state return))
-      ((is_comparison? arg) (M_v_comparison arg state return))
-      ((is_bool_op? arg) (M_v_bool_op arg state return))
+      ((is_math? arg) (M_v_math arg state return excep))
+      ((is_comparison? arg) (M_v_comparison arg state return excep))
+      ((is_bool_op? arg) (M_v_bool_op arg state return excep))
       ((or (eq? 'true arg) (eq? #t arg)) (return #t state))
       ((or (eq? 'false arg) (eq? #f arg)) (return #f state))
-      ((is_assign? arg) (M_v_assign arg state return))
+      ((is_assign? arg) (M_v_assign arg state return excep))
+      ((is_func_call? arg) (M_v_funcall arg state return excep))
       ((symbol? arg) (return (find_var arg state) state))
       (else (display arg) (error "M_value for this isn't implemented")))))
        
@@ -495,12 +521,12 @@
       (else (match_list arg '(- + / % *))))))
 
 (define M_v_math
-  (lambda (arg state return)
+  (lambda (arg state return excep)
     (cond
-      ((op? '% '2 arg) (op_2 remainder (cadr arg) (caddr arg) state return))
-      ((op? '/ '2 arg) (op_2 quotient (cadr arg) (caddr arg) state return))
-      ((eq? '3 (length arg)) (op_2 (eval (car arg)) (cadr arg) (caddr arg) state return))
-      ((eq? '2 (length arg)) (op_1 (eval (car arg)) (cadr arg) state return))
+      ((op? '% '2 arg) (op_2 remainder (cadr arg) (caddr arg) state return excep))
+      ((op? '/ '2 arg) (op_2 quotient (cadr arg) (caddr arg) state return excep))
+      ((eq? '3 (length arg)) (op_2 (eval (car arg)) (cadr arg) (caddr arg) state return excep))
+      ((eq? '2 (length arg)) (op_1 (eval (car arg)) (cadr arg) state return excep))
       (else (display arg) (error "M_v_math: this operator not yet implemented")))))
 
 (define is_bool_op?
@@ -514,11 +540,11 @@
       (else (match_list arg '(&& ||))))))
 
 (define M_v_bool_op
-  (lambda (arg state return)
+  (lambda (arg state return excep)
     (cond
-      ((op? '! '1 arg) (op_1 (lambda (a) (not a)) (cadr arg) state return))
-      ((op? '&& '2 arg) (op_2 (lambda (a b) (and a b)) (cadr arg) (caddr arg) state return))
-      ((op? '|| '2 arg) (op_2 (lambda (a b) (or a b)) (cadr arg) (caddr arg) state return))
+      ((op? '! '1 arg) (op_1 (lambda (a) (not a)) (cadr arg) state return excep))
+      ((op? '&& '2 arg) (op_2 (lambda (a b) (and a b)) (cadr arg) (caddr arg) state return excep))
+      ((op? '|| '2 arg) (op_2 (lambda (a b) (or a b)) (cadr arg) (caddr arg) state return excep))
       (else (display arg) (error "M_v_bool_op?: this operator not yet implemented")))))
 
 (define is_comparison?
@@ -531,11 +557,11 @@
       (else (match_list arg '(< <= == != >= >))))))
 
 (define M_v_comparison
-  (lambda (arg state return)
+  (lambda (arg state return excep)
     (cond
       ;((op? '!= '2 arg) (op_2 (lambda (a b) (not (eq? a b))) (cadr arg) (caddr arg) state return))
       ;((op? '== '2 arg) (op_2 (lambda (a b) (eq? a b)) (cadr arg) (caddr arg) state return))
-      ((eq? '3 (length arg)) (op_2 (eval (car arg)) (cadr arg) (caddr arg) state return))
+      ((eq? '3 (length arg)) (op_2 (eval (car arg)) (cadr arg) (caddr arg) state return excep))
       (else (display arg) (error "M_v_comparison: this operator not yet implemented")))))
 
 (define ==
@@ -547,9 +573,18 @@
     (not (eq? a b))))
 
 (define M_v_assign
-  (lambda (arg state return)
+  (lambda (arg state return excep)
     (M_value (caddr arg) state (lambda (val state1)
-                                 (return val (assign_var (cadr arg) val state1))))))
+                                 (return val (assign_var (cadr arg) val state1))) excep)))
+
+(define M_v_funcall
+  (lambda (arg state return excep)
+    (funcall (cadr arg) (cddr arg) (add_layer (new_layer) state) 
+             (lambda (term_state) (error "function as expression did not return a value"))
+             (lambda (val state) (return val (remove_layer state)))
+             (lambda (exception state) (excep exception (remove_layer state)))
+             (lambda (cont_state) (error "Can't call continue inside a function"))
+             (lambda (break_state) (error "Can't call break inside a function")))))
 
 ; === M value utlities ===
 
@@ -561,14 +596,14 @@
       (else (eq? operator (car input))))))
 
 (define op_2
-  (lambda (operation left_arg right_arg state0 return)
+  (lambda (operation left_arg right_arg state0 return excep)
     (M_value left_arg state0 (lambda (val_left state1) 
                                (M_value right_arg state1 (lambda (val_right state2)
-                                                           (return (operation val_left val_right) state2)))))))
+                                                           (return (operation val_left val_right) state2)) excep)) excep)))
 
 (define op_1
-  (lambda (operation arg state0 return)
-    (M_value arg state0 (lambda (val_arg state1) (return (operation val_arg) state1)))))
+  (lambda (operation arg state0 return excep)
+    (M_value arg state0 (lambda (val_arg state1) (return (operation val_arg) state1)) excep)))
 
 (define match_list
   (lambda (arg list)
@@ -578,7 +613,7 @@
 ; evaluate conditional (while, for, if that kind of thing)
 
 (define M_bool
-  (lambda (arg state return)
+  (lambda (arg state return excep)
     (cond
       ((null? arg) (error "M_bool: null arg"))
       ((or (eq? #t arg) (eq? 'true arg)) (return #t state))
@@ -586,7 +621,7 @@
       (else (M_value arg state (lambda (v state) 
                                  (cond
                                    ((integer? v) (error "M_bool: condition evaluated to integer"))
-                                   (else (return v state)))))))))
+                                   (else (return v state)))) excep)))))
 
 
 ; ====== TESTING ======
