@@ -37,4 +37,4 @@
 ; contains(Object o)
 (define contains
   (lambda (list object)
-    (foldl (lambda (a b) (or a b)) 'f (map (lambda (n) (eq? object n)) list))))
+    (foldl (lambda (a b) (or a b)) #f (map (lambda (n) (eq? object n)) list))))
