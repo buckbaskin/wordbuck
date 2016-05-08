@@ -4,22 +4,47 @@
 
 (define evolve
   (lambda (code rules)
-    (apply_rule code rules (lambda (v) v))))
+    (apply_rule code rules (lambda (new_code)
+                             (cond
+                               ((null? new_code) new_code)
+                               ((deep_equals code new_code) new_code)
+                               (else (interpret new_code)))))))
 
-(define add_rule2
-  (cons (lambda (args)
+(define deep_equals
+  (lambda (v1 v2)
+    (cond
+      ((and (null? v1) (null? v2)) #t)
+      ((or (null? v1) (null? v2)) #f)
+      ((and (list? v1) (list? v2)) (and (deep_equals (car v1) (car v2)) (deep_equals (cdr v1) (cdr v2))))
+      ((or (null? v1) (null? v2)) #f)
+      (else (eq? v1 v2)))))
+
+(define rule_add2
+  (list (lambda (code)
           (cond
-            ((null? args) #f) 
-            ((not (list? args)) #f)
-            ((not (eq? (length args) '3)) #f)
-            (else (eq? (car args) '+))))
-        (cons (lambda (code)
-                (+ (interpret (cadr code)) (interpret (caddr code))))
-              '())))
+            ((null? code) #f) 
+            ((not (list? code)) #f)
+            ((not (eq? (length code) '3)) #f)
+            (else (eq? (car code) '+))))
+        (lambda (code)
+                ((lambda (a b)
+                   (cond
+                     ((and (number? a) (number? b)) (+ a b))
+                     (else (raise "can't add non-numbers")))) (interpret (cadr code)) (interpret (caddr code))))))
+
+(define rule_addn
+  (list (lambda (code)
+          (cond
+            ((null? code) #f)
+            ((not (list? code)) #f)
+            (else (eq? (car code) '+))))
+        (lambda (code)
+          (cons '+ (cons (interpret (list '+ (cadr code) (caddr code))) (cdddr code))))))
   
 (define collect_rules
   (lambda ()
-    (list add_rule2)))
+    (list rule_add2
+          rule_addn)))
 
 (define first_condition
   (lambda (rules)
@@ -37,4 +62,4 @@
       (else (apply_rule code (cdr rules) cont)))))
 
 
-(interpret '(+ 1 (+ 2 3)))
+(interpret '(+ 1 2 3 4 5))
