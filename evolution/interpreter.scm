@@ -40,11 +40,32 @@
             (else (eq? (car code) '+))))
         (lambda (code)
           (cons '+ (cons (interpret (list '+ (cadr code) (caddr code))) (cdddr code))))))
-  
+
+(define rule_subtract2
+  (list (lambda (code)
+          (cond
+            ((null? code) #f)
+            ((not (list? code)) #f)
+            ((not (eq? (length code) 3)) #f)
+            (else (eq? (car code) '-))))
+        (lambda (code)
+          (interpret (list '+ (cadr code) (- (caddr code)))))))
+
+(define rule_subtractn
+  (list (lambda (code)
+          (cond
+            ((null? code) #f)
+            ((not (list? code)) #f)
+            (else (eq? (car code) '-))))
+        (lambda (code)
+          (cons '- (cons (interpret (list '+ (cadr code) (- (caddr code)))) (cdddr code))))))
+
 (define collect_rules
   (lambda ()
     (list rule_add2
-          rule_addn)))
+          rule_addn
+          rule_subtract2
+          rule_subtractn)))
 
 (define first_condition
   (lambda (rules)
@@ -62,4 +83,4 @@
       (else (apply_rule code (cdr rules) cont)))))
 
 
-(interpret '(+ 1 2 3 4 5))
+(interpret '(- 3 2 1))
