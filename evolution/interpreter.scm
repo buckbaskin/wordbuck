@@ -135,6 +135,24 @@
             ((interpret (cadr code)) #t)
             (else (cons 'or (cddr code)))))))
 
+(define rule_and2
+  (list (lambda (code)
+          (cond
+            ((not (eq? (length code) 3)) #f)
+            (else (eq? (car code) 'and))))
+        (lambda (code)
+          (cond
+            ((interpret (cadr code)) (interpret (caddr code)))
+            (else #f)))))
+
+(define rule_andn
+  (list (lambda (code)
+          (eq? (car code) 'and))
+        (lambda (code)
+          (cond
+            ((interpret (cadr code)) (cons 'and (cddr code)))
+            (else #f)))))
+
 (define collect_rules
   (lambda ()
     (list rule_nullcode
@@ -171,4 +189,4 @@
 ; Run example
 ;=============
 
-(interpret #t)
+(interpret (and #t #t #t))
