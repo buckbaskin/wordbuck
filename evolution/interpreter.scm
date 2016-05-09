@@ -34,6 +34,12 @@
         (lambda (code)
           code)))
 
+(define rule_listoflist
+  (list (lambda (code)
+          (list? (car code)))
+        (lambda (code)
+          (cons (evolve (car code) (collect_rules)) (rule_listoflist (cdr code))))))
+
 (define rule_add2
   (list (lambda (code)
           (cond
@@ -183,6 +189,7 @@
   (lambda ()
     (list rule_nullcode
           rule_notlist
+          rule_listoflist
           rule_not
           rule_or2
           rule_orn
@@ -220,4 +227,4 @@
 ; Run example
 ;=============
 
-(interpret '(% -5 2))
+(interpret '(5 (- 6 10) (% -5 2)))
