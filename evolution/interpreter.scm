@@ -162,6 +162,16 @@
             ((interpret (car (cadr code))) (cadr (cadr code)))
             (else (cons 'cond (cddr code)))))))
 
+(define rule_if
+  (list (lambda (code)
+          (cond
+            ((not (eq? (length code) 4)) #f)
+            (else (eq? (car code) 'if))))
+        (lambda (code)
+          (cond
+            ((interpret (cadr code)) (caddr code))
+            (else (cadddr code))))))
+
 (define collect_rules
   (lambda ()
     (list rule_nullcode
@@ -169,7 +179,10 @@
           rule_not
           rule_or2
           rule_orn
+          rule_and2
+          rule_andn
           rule_cond
+          rule_if
           rule_multiply2
           rule_multiplyn
           rule_divide2
@@ -199,7 +212,4 @@
 ; Run example
 ;=============
 
-(interpret '(cond 
-              (#f 1)
-              (#f 2)
-              (else 0)))
+(interpret '(if (and #t #t #t) 1 0))
