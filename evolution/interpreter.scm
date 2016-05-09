@@ -67,6 +67,28 @@
         (lambda (code)
           (cons '* (cons (interpret (list '* (cadr code) (caddr code))) (cdddr code))))))
 
+(define rule_divide2
+  (list (lambda (code)
+          (cond
+            ((null? code) #f) 
+            ((not (list? code)) #f)
+            ((not (eq? (length code) '3)) #f)
+            (else (eq? (car code) '/))))
+        (lambda (code)
+          ((lambda (a b)
+             (cond
+               ((and (number? a) (number? b)) (/ a b))
+               (else (raise "can't multiply non-numbers")))) (interpret (cadr code)) (interpret (caddr code))))))
+
+(define rule_dividen
+  (list (lambda (code)
+          (cond
+            ((null? code) #f)
+            ((not (list? code)) #f)
+            (else (eq? (car code) '/))))
+        (lambda (code)
+          (cons '/ (cons (interpret (list '/ (cadr code) (caddr code))) (cdddr code))))))
+
 (define rule_subtract1
   (list (lambda (code)
           (cond
@@ -98,10 +120,12 @@
 
 (define collect_rules
   (lambda ()
-    (list rule_add2
-          rule_addn
-          rule_multiply2
+    (list rule_multiply2
           rule_multiplyn
+          rule_divide2
+          rule_dividen
+          rule_add2
+          rule_addn
           rule_subtract2
           rule_subtract1
           rule_subtractn)))
@@ -122,4 +146,4 @@
       (else (apply_rule code (cdr rules) cont)))))
 
 
-(interpret '(- 1))
+(interpret '(/ 8 2 2))
