@@ -22,6 +22,17 @@
 ;===============
 ; COLLECT RULES
 ;===============
+(define rule_nullcode
+  (list (lambda (code)
+          (null? code))
+        (lambda (code)
+          code)))
+
+;(define rule_notlist
+;  (list (lambda (code)
+;          (not (list? code)))
+;        (lambda (code)
+;          code))
 
 (define rule_add2
   (list (lambda (code)
@@ -118,9 +129,45 @@
         (lambda (code)
           (cons '- (cons (interpret (list '+ (cadr code) (- (caddr code)))) (cdddr code))))))
 
+(define rule_not
+  (list (lambda (code)
+          (cond
+            ((not (list? code)) #f)
+            ((not (eq? (length code) 2)) #f)
+            (else (eq? (car code) 'not))))
+        (lambda (code)
+          (cond
+            ((interpret (cadr code)) #f)
+            (else #t)))))
+
+(define rule_or2
+  (list (lambda (code)
+          (cond
+            ((not (list? code)) #f)
+            ((not (eq? (length code) 3)) #f)
+            (else (eq? (car code) 'or))))
+        (lambda (code)
+          (cond
+            ((interpret (cadr code)) #t)
+            (else (interpret (caddr code)))))))
+
+(define rule_orn
+  (list (lambda (code)
+          (cond
+            ((not (list? code)) #f)
+            (else (eq? (car code) 'or))))
+        (lambda (code)
+          (cond
+            ((interpret (cadr code)) #t)
+            (else (cons 'or (cddr code)))))))
+
 (define collect_rules
   (lambda ()
-    (list rule_multiply2
+    (list rule_nullcode
+          rule_not
+          rule_or2
+          rule_orn
+          rule_multiply2
           rule_multiplyn
           rule_divide2
           rule_dividen
@@ -146,4 +193,4 @@
       (else (apply_rule code (cdr rules) cont)))))
 
 
-(interpret '(/ 8 2 2))
+(interpret '(or #t #f #f #f))
