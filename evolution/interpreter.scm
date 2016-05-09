@@ -107,6 +107,13 @@
         (lambda (code)
           (cons '- (cons (interpret (list '+ (cadr code) (- (caddr code)))) (cdddr code))))))
 
+(define rule_modulo
+  (list (lambda (code)
+          (eq? (length code) 3)
+          (eq? (car code) '%))
+        (lambda (code)
+          (remainder (cadr code) (caddr code)))))
+
 (define rule_not
   (list (lambda (code)
           (cond
@@ -191,7 +198,8 @@
           rule_addn
           rule_subtract2
           rule_subtract1
-          rule_subtractn)))
+          rule_subtractn
+          rule_modulo)))
 
 (define first_condition
   (lambda (rules)
@@ -212,4 +220,4 @@
 ; Run example
 ;=============
 
-(interpret '(if (and #t #t #t) 1 0))
+(interpret '(% -5 2))
