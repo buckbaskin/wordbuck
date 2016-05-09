@@ -28,17 +28,15 @@
         (lambda (code)
           code)))
 
-;(define rule_notlist
-;  (list (lambda (code)
-;          (not (list? code)))
-;        (lambda (code)
-;          code))
+(define rule_notlist
+  (list (lambda (code)
+          (not (list? code)))
+        (lambda (code)
+          code)))
 
 (define rule_add2
   (list (lambda (code)
           (cond
-            ((null? code) #f) 
-            ((not (list? code)) #f)
             ((not (eq? (length code) '3)) #f)
             (else (eq? (car code) '+))))
         (lambda (code)
@@ -49,18 +47,13 @@
 
 (define rule_addn
   (list (lambda (code)
-          (cond
-            ((null? code) #f)
-            ((not (list? code)) #f)
-            (else (eq? (car code) '+))))
+          (eq? (car code) '+))
         (lambda (code)
           (cons '+ (cons (interpret (list '+ (cadr code) (caddr code))) (cdddr code))))))
 
 (define rule_multiply2
   (list (lambda (code)
           (cond
-            ((null? code) #f) 
-            ((not (list? code)) #f)
             ((not (eq? (length code) '3)) #f)
             (else (eq? (car code) '*))))
         (lambda (code)
@@ -71,18 +64,13 @@
 
 (define rule_multiplyn
   (list (lambda (code)
-          (cond
-            ((null? code) #f)
-            ((not (list? code)) #f)
-            (else (eq? (car code) '*))))
+          (eq? (car code) '*))
         (lambda (code)
           (cons '* (cons (interpret (list '* (cadr code) (caddr code))) (cdddr code))))))
 
 (define rule_divide2
   (list (lambda (code)
           (cond
-            ((null? code) #f) 
-            ((not (list? code)) #f)
             ((not (eq? (length code) '3)) #f)
             (else (eq? (car code) '/))))
         (lambda (code)
@@ -93,18 +81,13 @@
 
 (define rule_dividen
   (list (lambda (code)
-          (cond
-            ((null? code) #f)
-            ((not (list? code)) #f)
-            (else (eq? (car code) '/))))
+          (eq? (car code) '/))
         (lambda (code)
           (cons '/ (cons (interpret (list '/ (cadr code) (caddr code))) (cdddr code))))))
 
 (define rule_subtract1
   (list (lambda (code)
           (cond
-            ((null? code) #f)
-            ((not (list? code)) #f)
             ((not (eq? (length code) 2)) #f)
             (else (eq? (car code) '-))))
         (lambda (code)
@@ -113,8 +96,6 @@
 (define rule_subtract2
   (list (lambda (code)
           (cond
-            ((null? code) #f)
-            ((not (list? code)) #f)
             ((not (eq? (length code) 3)) #f)
             (else (eq? (car code) '-))))
         (lambda (code)
@@ -122,17 +103,13 @@
 
 (define rule_subtractn
   (list (lambda (code)
-          (cond
-            ((null? code) #f)
-            ((not (list? code)) #f)
-            (else (eq? (car code) '-))))
+          (eq? (car code) '-))
         (lambda (code)
           (cons '- (cons (interpret (list '+ (cadr code) (- (caddr code)))) (cdddr code))))))
 
 (define rule_not
   (list (lambda (code)
           (cond
-            ((not (list? code)) #f)
             ((not (eq? (length code) 2)) #f)
             (else (eq? (car code) 'not))))
         (lambda (code)
@@ -143,7 +120,6 @@
 (define rule_or2
   (list (lambda (code)
           (cond
-            ((not (list? code)) #f)
             ((not (eq? (length code) 3)) #f)
             (else (eq? (car code) 'or))))
         (lambda (code)
@@ -153,9 +129,7 @@
 
 (define rule_orn
   (list (lambda (code)
-          (cond
-            ((not (list? code)) #f)
-            (else (eq? (car code) 'or))))
+          (eq? (car code) 'or))
         (lambda (code)
           (cond
             ((interpret (cadr code)) #t)
@@ -164,6 +138,7 @@
 (define collect_rules
   (lambda ()
     (list rule_nullcode
+          rule_notlist
           rule_not
           rule_or2
           rule_orn
@@ -192,5 +167,8 @@
       (((first_condition rules) code) (cont ((first_operation rules) code)))
       (else (apply_rule code (cdr rules) cont)))))
 
+;=============
+; Run example
+;=============
 
-(interpret '(or #t #f #f #f))
+(interpret #t)
