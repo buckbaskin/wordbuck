@@ -1,3 +1,5 @@
+; up next? variables! and cps!
+
 (define interpret
   (lambda (code)
     (evolve code (collect_rules))))
