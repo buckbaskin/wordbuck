@@ -153,6 +153,15 @@
             ((interpret (cadr code)) (cons 'and (cddr code)))
             (else #f)))))
 
+(define rule_cond
+  (list (lambda (code)
+          (eq? (car code) 'cond))
+        (lambda (code)
+          (cond
+            ((eq? (car (cadr code)) 'else) (cadr (cadr code)))
+            ((interpret (car (cadr code))) (cadr (cadr code)))
+            (else (cons 'cond (cddr code)))))))
+
 (define collect_rules
   (lambda ()
     (list rule_nullcode
@@ -160,6 +169,7 @@
           rule_not
           rule_or2
           rule_orn
+          rule_cond
           rule_multiply2
           rule_multiplyn
           rule_divide2
@@ -189,4 +199,7 @@
 ; Run example
 ;=============
 
-(interpret (and #t #t #t))
+(interpret '(cond 
+              (#f 1)
+              (#f 2)
+              (else 0)))
