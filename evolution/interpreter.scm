@@ -19,6 +19,10 @@
       ((or (null? v1) (null? v2)) #f)
       (else (eq? v1 v2)))))
 
+;===============
+; COLLECT RULES
+;===============
+
 (define rule_add2
   (list (lambda (code)
           (cond
@@ -27,10 +31,10 @@
             ((not (eq? (length code) '3)) #f)
             (else (eq? (car code) '+))))
         (lambda (code)
-                ((lambda (a b)
-                   (cond
-                     ((and (number? a) (number? b)) (+ a b))
-                     (else (raise "can't add non-numbers")))) (interpret (cadr code)) (interpret (caddr code))))))
+          ((lambda (a b)
+             (cond
+               ((and (number? a) (number? b)) (+ a b))
+               (else (raise "can't add non-numbers")))) (interpret (cadr code)) (interpret (caddr code))))))
 
 (define rule_addn
   (list (lambda (code)
@@ -49,10 +53,10 @@
             ((not (eq? (length code) '3)) #f)
             (else (eq? (car code) '*))))
         (lambda (code)
-                ((lambda (a b)
-                   (cond
-                     ((and (number? a) (number? b)) (* a b))
-                     (else (raise "can't multiply non-numbers")))) (interpret (cadr code)) (interpret (caddr code))))))
+          ((lambda (a b)
+             (cond
+               ((and (number? a) (number? b)) (* a b))
+               (else (raise "can't multiply non-numbers")))) (interpret (cadr code)) (interpret (caddr code))))))
 
 (define rule_multiplyn
   (list (lambda (code)
@@ -62,6 +66,16 @@
             (else (eq? (car code) '*))))
         (lambda (code)
           (cons '* (cons (interpret (list '* (cadr code) (caddr code))) (cdddr code))))))
+
+(define rule_subtract1
+  (list (lambda (code)
+          (cond
+            ((null? code) #f)
+            ((not (list? code)) #f)
+            ((not (eq? (length code) 2)) #f)
+            (else (eq? (car code) '-))))
+        (lambda (code)
+          (cons '- (cons '0 (cdr code))))))
 
 (define rule_subtract2
   (list (lambda (code)
@@ -89,6 +103,7 @@
           rule_multiply2
           rule_multiplyn
           rule_subtract2
+          rule_subtract1
           rule_subtractn)))
 
 (define first_condition
@@ -107,4 +122,4 @@
       (else (apply_rule code (cdr rules) cont)))))
 
 
-(interpret '(* 4 3 2 1))
+(interpret '(- 1))
