@@ -27,54 +27,77 @@
 (define rule_nullcode
   (list (lambda (code)
           (null? code))
-        (lambda (code)
-          code)))
+        (lambda (code cont)
+          (cont code))))
 
 (define rule_notlist
   (list (lambda (code)
           (not (list? code)))
-        (lambda (code)
-          code)))
+        (lambda (code cont)
+          (cont code))))
 
 (define rule_listoflist
   (list (lambda (code)
           (list? (car code)))
-        (lambda (code)
-          (cons (evolve (car code) (collect_rules)) (rule_listoflist (cdr code))))))
+        (lambda (code cont)
+          (cont (cons (evolve (car code) (collect_rules)) (rule_listoflist (cdr code)))))))
 
 (define rule_add2
   (list (lambda (code)
           (cond
             ((not (eq? (length code) '3)) #f)
             (else (eq? (car code) '+))))
-        (lambda (code)
-          ((lambda (a b)
-             (cond
-               ((and (number? a) (number? b)) (+ a b))
-               (else (raise "can't add non-numbers")))) (interpret (cadr code)) (interpret (caddr code))))))
+        (lambda (code cont)
+          (cont ((lambda (a b)
+                   (cond
+                     ((and (number? a) (number? b)) (+ a b))
+                     (else (raise "can't add non-numbers 1"))))
+                 (interpret (cadr code)) (interpret (caddr code)))))))
+
+(define rule_add2cps
+  (list (lambda (code)
+          (cond
+            ((not (eq? (length code) '3)) #f)
+            (else (eq? (car code) '+))))
+        (lambda (code cont)
+          (apply_rule (cadr code) (collect_rules)
+                      (lambda (left)
+                        (apply_rule (caddr code) (collect_rules)
+                                    (lambda (right)
+                                      (cond
+                                        ((and (number? left) (number? right)) (cont (+ left right)))
+                                        (else (raise "can't add non-numbers 2"))))))))))
 
 (define rule_addn
   (list (lambda (code)
           (eq? (car code) '+))
-        (lambda (code)
-          (cons '+ (cons (interpret (list '+ (cadr code) (caddr code))) (cdddr code))))))
+        (lambda (code cont)
+          (cont (cons '+ (cons (interpret (list '+ (cadr code) (caddr code))) (cdddr code)))))))
+
+(define rule_addncps
+  (list (lambda (code)
+          (eq? (car code) '+))
+        (lambda (code cont)
+          (apply_rule (list '+ (cadr code) (caddr code)) (collect_rules)
+                      (lambda (first)
+                        (cont (list '+ first (cdddr code))))))))
 
 (define rule_multiply2
   (list (lambda (code)
           (cond
             ((not (eq? (length code) '3)) #f)
             (else (eq? (car code) '*))))
-        (lambda (code)
-          ((lambda (a b)
+        (lambda (code cont)
+          (cont ((lambda (a b)
              (cond
                ((and (number? a) (number? b)) (* a b))
-               (else (raise "can't multiply non-numbers")))) (interpret (cadr code)) (interpret (caddr code))))))
+               (else (raise "can't multiply non-numbers")))) (interpret (cadr code)) (interpret (caddr code)))))))
 
 (define rule_multiplyn
   (list (lambda (code)
           (eq? (car code) '*))
-        (lambda (code)
-          (cons '* (cons (interpret (list '* (cadr code) (caddr code))) (cdddr code))))))
+        (lambda (code cont)
+          (code (cons '* (cons (interpret (list '* (cadr code) (caddr code))) (cdddr code)))))))
 
 (define rule_divide2
   (list (lambda (code)
@@ -191,24 +214,8 @@
   (lambda ()
     (list rule_nullcode
           rule_notlist
-          rule_listoflist
-          rule_not
-          rule_or2
-          rule_orn
-          rule_and2
-          rule_andn
-          rule_cond
-          rule_if
-          rule_multiply2
-          rule_multiplyn
-          rule_divide2
-          rule_dividen
-          rule_add2
-          rule_addn
-          rule_subtract2
-          rule_subtract1
-          rule_subtractn
-          rule_modulo)))
+          rule_add2cps
+          rule_addncps)))
 
 (define first_condition
   (lambda (rules)
@@ -222,11 +229,11 @@
   (lambda (code rules cont)
     (cond
       ((null? rules) (cont code))
-      (((first_condition rules) code) (cont ((first_operation rules) code)))
+      (((first_condition rules) code) ((first_operation rules) code cont))
       (else (apply_rule code (cdr rules) cont)))))
 
 ;=============
 ; Run example
 ;=============
 
-(interpret '(5 (- 6 10) (% -5 2)))
+(interpret '(+ 1 2 3))
