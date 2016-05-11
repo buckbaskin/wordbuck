@@ -80,7 +80,7 @@
         (lambda (code cont)
           (apply_rule (list '+ (cadr code) (caddr code)) (collect_rules)
                       (lambda (first)
-                        (cont (list '+ first (cdddr code))))))))
+                        (cont (cons '+ (cons first (cdddr code)))))))))
 
 (define rule_multiply2
   (list (lambda (code)
