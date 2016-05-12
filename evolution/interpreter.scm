@@ -1,3 +1,4 @@
+#lang scheme
 ; up next? variables! and generating math rules based on function
 
 (define interpret
@@ -20,6 +21,24 @@
       ((and (list? v1) (list? v2)) (and (deep_equals (car v1) (car v2)) (deep_equals (cdr v1) (cdr v2))))
       ((or (null? v1) (null? v2)) #f)
       (else (eq? v1 v2)))))
+;===============
+; Rule Gen Test
+;===============
+
+(define rule_gen2 
+  (lambda (operation_symbol type_check)
+    (list (lambda (code)
+            (cond
+              ((not (eq? (length code) 3)) #f)
+              (else (eq? operation_symbol (car code)))))
+          (lambda (code cont)
+            (apply_rule (cadr code) (collect_rules)
+                        (lambda (left)
+                          (apply_rule (caddr code) (collect_rules)
+                                      (lambda (right)
+                                        (cond
+                                          ((and (type_check left) (type_check right)) (cont ((eval operation_symbol) left right)))
+                                          (else (raise "can't add non-numbers x")))))))))))
 
 ;===============
 ; COLLECT RULES
@@ -47,18 +66,7 @@
                                       (cont (cons new_car new_cdr)))))))))
 
 (define rule_add2cps
-  (list (lambda (code)
-          (cond
-            ((not (eq? (length code) '3)) #f)
-            (else (eq? (car code) '+))))
-        (lambda (code cont)
-          (apply_rule (cadr code) (collect_rules)
-                      (lambda (left)
-                        (apply_rule (caddr code) (collect_rules)
-                                    (lambda (right)
-                                      (cond
-                                        ((and (number? left) (number? right)) (cont (+ left right)))
-                                        (else (raise "can't add non-numbers 2"))))))))))
+  (rule_gen2 '+ number?))
 
 (define rule_addncps
   (list (lambda (code)
@@ -68,19 +76,8 @@
                       (lambda (first)
                         (cont (cons '+ (cons first (cdddr code)))))))))
 
-(define rule_multiply2
-  (list (lambda (code)
-          (cond
-            ((not (eq? (length code) '3)) #f)
-            (else (eq? (car code) '*))))
-        (lambda (code cont)
-          (apply_rule (cadr code) (collect_rules)
-                      (lambda (left)
-                        (apply_rule (caddr code) (collect_rules)
-                                    (lambda (right)
-                                      (cond
-                                        ((and (number? left) (number? right)) (cont (* left right)))
-                                        (else (raise "can't add non-numbers"))))))))))
+(define rule_multiply2cps
+  (rule_gen2 '* number?))
 
 (define rule_multiplyn
   (list (lambda (code)
@@ -90,16 +87,8 @@
                       (lambda (first)
                         (cont (cons '* (cons first (cdddr code)))))))))
 
-(define rule_divide2
-  (list (lambda (code)
-          (cond
-            ((not (eq? (length code) '3)) #f)
-            (else (eq? (car code) '/))))
-        (lambda (code)
-          ((lambda (a b)
-             (cond
-               ((and (number? a) (number? b)) (/ a b))
-               (else (raise "can't multiply non-numbers")))) (interpret (cadr code)) (interpret (caddr code))))))
+(define rule_divide2cps
+  (rule_gen2 '/ number?))
 
 (define rule_dividen
   (list (lambda (code)
@@ -115,13 +104,8 @@
         (lambda (code)
           (cons '- (cons '0 (cdr code))))))
 
-(define rule_subtract2
-  (list (lambda (code)
-          (cond
-            ((not (eq? (length code) 3)) #f)
-            (else (eq? (car code) '-))))
-        (lambda (code)
-          (interpret (list '+ (cadr code) (- (caddr code)))))))
+(define rule_subtract2cps
+  (rule_gen2 '- number?))
 
 (define rule_subtractn
   (list (lambda (code)
@@ -151,7 +135,7 @@
           (cond
             ((not (eq? (length code) 3)) #f)
             (else (eq? (car code) 'or))))
-        (lambda (code)
+        (lambda (code cont)
           (cond
             ((interpret (cadr code)) #t)
             (else (interpret (caddr code)))))))
@@ -169,7 +153,7 @@
           (cond
             ((not (eq? (length code) 3)) #f)
             (else (eq? (car code) 'and))))
-        (lambda (code)
+        (lambda (code cont)
           (cond
             ((interpret (cadr code)) (interpret (caddr code)))
             (else #f)))))
@@ -207,9 +191,13 @@
           rule_notlist
           rule_listoflist
           rule_multiply2cps
-          rule_multiplyncps
+          rule_multiplyn
+          rule_divide2cps
           rule_add2cps
-          rule_addncps)))
+          rule_addncps
+          rule_subtract2cps
+          rule_or2
+          rule_and2)))
 
 (define first_condition
   (lambda (rules)
@@ -230,4 +218,4 @@
 ; Run example
 ;=============
 
-(interpret '((+ 4 5 6) (+ 1 2 3)))
+(interpret '((and #f #f)))
